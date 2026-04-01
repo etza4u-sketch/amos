@@ -264,46 +264,31 @@ function handleAnswer(selected, btn) {
   setTimeout(() => {
     triviaModal.classList.add('hidden');
     if (correct) {
-      // תשובה נכונה: X לשחקן, אחר כך תור מחשב רגיל (O אחד)
       mark(chosenCell, 'X');
-      if (!gameOver) afterPlayerTurn(false);
+      if (!gameOver) computerPlay(1);   // תור מחשב רגיל – מהלך אחד
     } else {
-      // טעות: O בתא שנבחר, אחר כך מחשב מוסיף עוד O אחד
       mark(chosenCell, 'O');
-      if (!gameOver) afterPlayerTurn(true);
+      if (!gameOver) computerPlay(2);   // טעות – מחשב מוסיף עוד מהלך
     }
   }, 1500);
 }
 
-// ===== After Player Turn =====
-// bonus=false → מחשב שם O אחד
-// bonus=true  → מחשב שם O אחד נוסף (כי השחקן כבר קיבל O בתא שלו)
-function afterPlayerTurn(bonus) {
+// ===== Computer plays N moves sequentially =====
+function computerPlay(movesLeft) {
   locked = true;
-  setStatus('🤖 תור המחשב...');
+  statusText.textContent = '🤖 תור המחשב...';
 
-  // מהלך ראשון של המחשב
   setTimeout(() => {
-    const c1 = aiPick();
-    if (c1 === -1) { endGame(null); return; }
-    mark(c1, 'O');
+    const c = aiPick();
+    if (c === -1) { endGame(null); return; }
+    mark(c, 'O');
     if (gameOver) return;
 
-    if (bonus) {
-      // מהלך שני (בגלל טעות שחקן)
-      setTimeout(() => {
-        const c2 = aiPick();
-        if (c2 === -1) { endGame(null); return; }
-        mark(c2, 'O');
-        if (gameOver) return;
-        // שחרר נעילה רק אחרי שהמחשב סיים לסמן
-        locked = false;
-        setStatus('תורך! בחר תא ✕');
-      }, 700);
+    if (movesLeft > 1) {
+      computerPlay(movesLeft - 1);   // מהלך נוסף
     } else {
-      // שחרר נעילה רק אחרי שהמחשב סיים לסמן
       locked = false;
-      setStatus('תורך! בחר תא ✕');
+      statusText.textContent = 'תורך! בחר תא ✕';
     }
   }, 700);
 }
@@ -395,6 +380,5 @@ function updateScores() {
 }
 
 function setStatus(msg) {
-  statusText.style.opacity = '0';
-  setTimeout(() => { statusText.textContent = msg; statusText.style.opacity = '1'; }, 150);
+  statusText.textContent = msg;
 }
