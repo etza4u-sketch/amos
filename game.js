@@ -281,6 +281,8 @@ function handleAnswer(selected, btn) {
 function afterPlayerTurn(bonus) {
   locked = true;
   setStatus('🤖 תור המחשב...');
+
+  // מהלך ראשון של המחשב
   setTimeout(() => {
     const c1 = aiPick();
     if (c1 === -1) { endGame(null); return; }
@@ -288,22 +290,22 @@ function afterPlayerTurn(bonus) {
     if (gameOver) return;
 
     if (bonus) {
-      // תא נוסף למחשב כעונש על טעות
+      // מהלך שני (בגלל טעות שחקן)
       setTimeout(() => {
         const c2 = aiPick();
         if (c2 === -1) { endGame(null); return; }
         mark(c2, 'O');
-        if (!gameOver) playerTurn();
-      }, 600);
+        if (gameOver) return;
+        // שחרר נעילה רק אחרי שהמחשב סיים לסמן
+        locked = false;
+        setStatus('תורך! בחר תא ✕');
+      }, 700);
     } else {
-      playerTurn();
+      // שחרר נעילה רק אחרי שהמחשב סיים לסמן
+      locked = false;
+      setStatus('תורך! בחר תא ✕');
     }
   }, 700);
-}
-
-function playerTurn() {
-  locked = false;
-  setStatus('תורך! בחר תא ✕');
 }
 
 // ===== Mark Cell =====
