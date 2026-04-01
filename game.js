@@ -289,12 +289,36 @@ function handleAnswer(selectedIndex, clickedBtn) {
     if (correct) {
       placeSymbol(state.currentCell, 'X');
     } else {
-      // Computer picks best cell using AI
-      const aiCell = pickAIMove();
-      setStatus('🤖 המחשב בוחר מהלך חכם...');
-      setTimeout(() => placeSymbol(aiCell, 'O'), 400);
+      // Computer gets O in the cell the player chose
+      placeSymbolSilent(state.currentCell, 'O');
+      if (!state.gameOver) {
+        // Then computer takes an extra strategic turn
+        const aiCell = pickAIMove();
+        if (aiCell !== -1) {
+          setStatus('🤖 המחשב מנצל את התור הנוסף שלו...');
+          setTimeout(() => placeSymbol(aiCell, 'O'), 700);
+        } else {
+          // Board full after silent place
+          setTimeout(() => endGame(null), 300);
+        }
+      }
     }
   }, 1600);
+}
+
+// ===== Place Symbol (silent – no win/draw check) =====
+function placeSymbolSilent(index, symbol) {
+  state.board[index] = symbol;
+  const cell = cells[index];
+  cell.textContent = symbol === 'X' ? '✕' : '○';
+  cell.classList.add('taken', symbol.toLowerCase());
+  // Check win immediately – if computer won right here, stop
+  const winner = checkWinner();
+  if (winner) {
+    highlightWinner(winner.line);
+    setTimeout(() => endGame(winner.symbol), 500);
+    state.gameOver = true;
+  }
 }
 
 // ===== Place Symbol =====
