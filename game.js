@@ -289,7 +289,10 @@ function handleAnswer(selectedIndex, clickedBtn) {
     if (correct) {
       placeSymbol(state.currentCell, 'X');
     } else {
-      placeSymbol(state.currentCell, 'O');
+      // Computer picks best cell using AI
+      const aiCell = pickAIMove();
+      setStatus('🤖 המחשב בוחר מהלך חכם...');
+      setTimeout(() => placeSymbol(aiCell, 'O'), 400);
     }
   }, 1600);
 }
@@ -314,7 +317,47 @@ function placeSymbol(index, symbol) {
   setStatus('תורך! בחר תא ✕');
 }
 
-// ===== AI / Winner =====
+// ===== AI – Minimax =====
+function pickAIMove() {
+  // 1. Can computer win now?
+  const win = findThreateningMove('O');
+  if (win !== -1) return win;
+  // 2. Block player winning threat
+  const block = findThreateningMove('X');
+  if (block !== -1) return block;
+  // 3. Center
+  if (state.board[4] === null) return 4;
+  // 4. Opposite corner from player
+  const cornerPairs = [[0,8],[2,6],[8,0],[6,2]];
+  for (const [mine, opp] of cornerPairs) {
+    if (state.board[opp] === 'X' && state.board[mine] === null) return mine;
+  }
+  // 5. Any free corner
+  for (const c of [0,2,6,8]) {
+    if (state.board[c] === null) return c;
+  }
+  // 6. Any free edge
+  for (const c of [1,3,5,7]) {
+    if (state.board[c] === null) return c;
+  }
+  // 7. Fallback – first empty
+  return state.board.findIndex(c => c === null);
+}
+
+function findThreateningMove(symbol) {
+  for (const [a, b, c] of WIN_LINES) {
+    const line = [state.board[a], state.board[b], state.board[c]];
+    const cells3 = [a, b, c];
+    const symCount  = line.filter(v => v === symbol).length;
+    const nullCount = line.filter(v => v === null).length;
+    if (symCount === 2 && nullCount === 1) {
+      return cells3[line.indexOf(null)];
+    }
+  }
+  return -1;
+}
+
+// ===== Winner Check =====
 function checkWinner() {
   for (const line of WIN_LINES) {
     const [a, b, c] = line;
