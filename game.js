@@ -174,7 +174,6 @@ const state = {
   board: Array(9).fill(null),
   currentCell: null,
   gameOver: false,
-  computerThinking: false,
   scores: { player: 0, computer: 0, draws: 0 },
   usedQuestions: new Set(),
   hintUsed: false,
@@ -217,7 +216,7 @@ globalNewGame.addEventListener('click', newGame);
 
 // ===== Cell Click =====
 function onCellClick(index) {
-  if (state.gameOver || state.computerThinking || state.board[index] !== null) return;
+  if (state.gameOver || state.board[index] !== null) return;
   state.currentCell = index;
   openTrivia();
 }
@@ -292,7 +291,7 @@ function handleAnswer(selectedIndex, clickedBtn) {
     } else {
       putOnBoard(state.currentCell, 'O');
     }
-    if (!state.gameOver) computerTurn();
+    if (!state.gameOver) setStatus('תורך! בחר תא ✕');
   }, 1600);
 }
 
@@ -313,60 +312,6 @@ function putOnBoard(index, symbol) {
   }
 }
 
-// ===== Computer Turn =====
-function computerTurn() {
-  if (state.gameOver) return;
-  const aiCell = pickAIMove();
-  if (aiCell === -1) { endGame(null); return; }
-  state.computerThinking = true;
-  setStatus('🤖 המחשב בוחר מהלך...');
-  setTimeout(() => {
-    putOnBoard(aiCell, 'O');
-    state.computerThinking = false;
-    if (!state.gameOver) setStatus('תורך! בחר תא ✕');
-  }, 700);
-}
-
-// ===== AI – Minimax =====
-function pickAIMove() {
-  // 1. Can computer win now?
-  const win = findThreateningMove('O');
-  if (win !== -1) return win;
-  // 2. Block player winning threat
-  const block = findThreateningMove('X');
-  if (block !== -1) return block;
-  // 3. Center
-  if (state.board[4] === null) return 4;
-  // 4. Opposite corner from player
-  const cornerPairs = [[0,8],[2,6],[8,0],[6,2]];
-  for (const [mine, opp] of cornerPairs) {
-    if (state.board[opp] === 'X' && state.board[mine] === null) return mine;
-  }
-  // 5. Any free corner
-  for (const c of [0,2,6,8]) {
-    if (state.board[c] === null) return c;
-  }
-  // 6. Any free edge
-  for (const c of [1,3,5,7]) {
-    if (state.board[c] === null) return c;
-  }
-  // 7. Fallback – first empty
-  return state.board.findIndex(c => c === null);
-}
-
-function findThreateningMove(symbol) {
-  for (const [a, b, c] of WIN_LINES) {
-    const line = [state.board[a], state.board[b], state.board[c]];
-    const cells3 = [a, b, c];
-    const symCount  = line.filter(v => v === symbol).length;
-    const nullCount = line.filter(v => v === null).length;
-    if (symCount === 2 && nullCount === 1) {
-      return cells3[line.indexOf(null)];
-    }
-  }
-  return -1;
-}
-
 // ===== Winner Check =====
 function checkWinner() {
   for (const line of WIN_LINES) {
@@ -385,7 +330,6 @@ function highlightWinner(line) {
 // ===== End Game =====
 function endGame(symbol) {
   state.gameOver = true;
-  state.computerThinking = false;
   if (symbol === 'X') {
     state.scores.player++;
     resultEmoji.textContent = '🎉';
@@ -411,7 +355,6 @@ function newGame() {
   state.board = Array(9).fill(null);
   state.currentCell = null;
   state.gameOver = false;
-  state.computerThinking = false;
 
   cells.forEach(cell => {
     cell.textContent = '';
