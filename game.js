@@ -289,10 +289,12 @@ function handleAnswer(selectedIndex, clickedBtn) {
     triviaModal.classList.add('hidden');
     if (correct) {
       putOnBoard(state.currentCell, 'X');
+      if (!state.gameOver) computerTurn();
     } else {
+      // טעות: O בתא שנבחר + המחשב בוחר תא נוסף
       putOnBoard(state.currentCell, 'O');
+      if (!state.gameOver) computerTurn(true); // bonus = true → תא נוסף נוסף
     }
-    if (!state.gameOver) computerTurn();
   }, 1600);
 }
 
@@ -314,14 +316,23 @@ function putOnBoard(index, symbol) {
 }
 
 // ===== Computer Turn =====
-function computerTurn() {
+function computerTurn(bonus = false) {
   state.playerTurn = false;
   setStatus('🤖 תור המחשב...');
   setTimeout(() => {
     const cell = pickAIMove();
     if (cell === -1) { endGame(null); return; }
     putOnBoard(cell, 'O');
-    if (!state.gameOver) {
+    if (state.gameOver) return;
+    if (bonus) {
+      // טעות שחקן: תא נוסף למחשב
+      setTimeout(() => {
+        const cell2 = pickAIMove();
+        if (cell2 === -1) { endGame(null); return; }
+        putOnBoard(cell2, 'O');
+        if (!state.gameOver) { state.playerTurn = true; setStatus('תורך! בחר תא ✕'); }
+      }, 600);
+    } else {
       state.playerTurn = true;
       setStatus('תורך! בחר תא ✕');
     }
