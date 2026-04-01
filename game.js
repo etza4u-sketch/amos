@@ -169,274 +169,230 @@ const QUESTIONS = [
   }
 ];
 
-// ===== Game State =====
-const state = {
-  board: Array(9).fill(null),
-  currentCell: null,
-  gameOver: false,
-  playerTurn: true,          // true = player's turn, false = computer's turn
-  scores: { player: 0, computer: 0, draws: 0 },
-  usedQuestions: new Set(),
-  hintUsed: false,
-};
-
+// ===== WIN LINES =====
 const WIN_LINES = [
   [0,1,2],[3,4,5],[6,7,8],
   [0,3,6],[1,4,7],[2,5,8],
   [0,4,8],[2,4,6]
 ];
 
-// ===== DOM Refs =====
-const boardEl        = document.getElementById('board');
-const cells          = Array.from(document.querySelectorAll('.cell'));
-const statusText     = document.getElementById('status-text');
-const triviaModal    = document.getElementById('trivia-modal');
-const qCategory      = document.getElementById('q-category');
-const qText          = document.getElementById('q-text');
-const qOptions       = document.getElementById('q-options');
-const hintBtn        = document.getElementById('hint-btn');
-const hintBox        = document.getElementById('hint-box');
-const answerFeedback = document.getElementById('answer-feedback');
-const resultOverlay  = document.getElementById('result-overlay');
-const resultEmoji    = document.getElementById('result-emoji');
-const resultTitle    = document.getElementById('result-title');
-const resultSubtitle = document.getElementById('result-subtitle');
-const newGameBtn     = document.getElementById('new-game-btn');
-const resetScoresBtn = document.getElementById('reset-scores-btn');
-const globalNewGame  = document.getElementById('global-new-game');
-const playerScoreEl  = document.getElementById('player-score');
-const computerScoreEl= document.getElementById('computer-score');
-const drawScoreEl    = document.getElementById('draw-score');
+// ===== State =====
+let board        = Array(9).fill(null);
+let gameOver     = false;
+let locked       = false;   // נעילה בזמן מהלך מחשב
+let chosenCell   = null;
+let scores       = { player: 0, computer: 0, draws: 0 };
+let usedQs       = new Set();
+let currentQ     = null;
+
+// ===== DOM =====
+const cellEls       = Array.from(document.querySelectorAll('.cell'));
+const statusText    = document.getElementById('status-text');
+const triviaModal   = document.getElementById('trivia-modal');
+const qCategory     = document.getElementById('q-category');
+const qText         = document.getElementById('q-text');
+const qOptions      = document.getElementById('q-options');
+const hintBtn       = document.getElementById('hint-btn');
+const hintBox       = document.getElementById('hint-box');
+const answerFeedback= document.getElementById('answer-feedback');
+const resultOverlay = document.getElementById('result-overlay');
+const resultEmoji   = document.getElementById('result-emoji');
+const resultTitle   = document.getElementById('result-title');
+const resultSubtitle= document.getElementById('result-subtitle');
+const playerScoreEl = document.getElementById('player-score');
+const computerScoreEl=document.getElementById('computer-score');
+const drawScoreEl   = document.getElementById('draw-score');
 
 // ===== Init =====
-cells.forEach(cell => cell.addEventListener('click', () => onCellClick(+cell.dataset.index)));
+cellEls.forEach(c => c.addEventListener('click', () => onCellClick(+c.dataset.index)));
 hintBtn.addEventListener('click', showHint);
-newGameBtn.addEventListener('click', newGame);
-resetScoresBtn.addEventListener('click', resetAll);
-globalNewGame.addEventListener('click', newGame);
+document.getElementById('new-game-btn').addEventListener('click', newGame);
+document.getElementById('reset-scores-btn').addEventListener('click', resetAll);
+document.getElementById('global-new-game').addEventListener('click', newGame);
 
 // ===== Cell Click =====
-function onCellClick(index) {
-  if (state.gameOver || !state.playerTurn || state.board[index] !== null) return;
-  state.currentCell = index;
+function onCellClick(idx) {
+  if (gameOver || locked || board[idx] !== null) return;
+  chosenCell = idx;
   openTrivia();
 }
 
 // ===== Trivia =====
-let currentQ = null;
-
-function getRandomQuestion() {
-  let available = QUESTIONS.filter((_, i) => !state.usedQuestions.has(i));
-  if (available.length === 0) { state.usedQuestions.clear(); available = QUESTIONS; }
-  const idx = QUESTIONS.indexOf(available[Math.floor(Math.random() * available.length)]);
-  state.usedQuestions.add(idx);
-  return QUESTIONS[idx];
+function pickQuestion() {
+  let avail = QUESTIONS.map((q, i) => i).filter(i => !usedQs.has(i));
+  if (!avail.length) { usedQs.clear(); avail = QUESTIONS.map((_, i) => i); }
+  const i = avail[Math.floor(Math.random() * avail.length)];
+  usedQs.add(i);
+  return QUESTIONS[i];
 }
 
 function openTrivia() {
-  currentQ = getRandomQuestion();
-  state.hintUsed = false;
-
+  currentQ = pickQuestion();
   qCategory.textContent = currentQ.category;
-  qText.textContent = currentQ.question;
-  hintBox.textContent = '';
+  qText.textContent     = currentQ.question;
+  hintBox.textContent   = '';
   hintBox.classList.add('hidden');
-  hintBtn.disabled = false;
-  answerFeedback.classList.add('hidden');
+  hintBtn.disabled      = false;
   answerFeedback.className = 'feedback hidden';
-
-  qOptions.innerHTML = '';
+  qOptions.innerHTML    = '';
   currentQ.options.forEach((opt, i) => {
     const btn = document.createElement('button');
-    btn.className = 'option-btn';
+    btn.className   = 'option-btn';
     btn.textContent = opt;
-    btn.addEventListener('click', () => handleAnswer(i, btn));
+    btn.onclick     = () => handleAnswer(i, btn);
     qOptions.appendChild(btn);
   });
-
   triviaModal.classList.remove('hidden');
 }
 
 function showHint() {
-  state.hintUsed = true;
-  hintBox.textContent = `💡 ${currentQ.hint}`;
+  hintBox.textContent = '💡 ' + currentQ.hint;
   hintBox.classList.remove('hidden');
   hintBtn.disabled = true;
 }
 
-function handleAnswer(selectedIndex, clickedBtn) {
-  // Disable all buttons
-  const allBtns = qOptions.querySelectorAll('.option-btn');
-  allBtns.forEach(b => b.disabled = true);
-
-  const correct = selectedIndex === currentQ.answer;
-
-  // Highlight answer
-  allBtns[currentQ.answer].classList.add('correct');
-  if (!correct) clickedBtn.classList.add('wrong');
-
-  // Show feedback
+// ===== Answer =====
+function handleAnswer(selected, btn) {
+  qOptions.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+  const correct = selected === currentQ.answer;
+  qOptions.querySelectorAll('.option-btn')[currentQ.answer].classList.add('correct');
+  if (!correct) btn.classList.add('wrong');
+  answerFeedback.className = 'feedback ' + (correct ? 'correct' : 'wrong');
   answerFeedback.classList.remove('hidden');
-  if (correct) {
-    answerFeedback.className = 'feedback correct';
-    answerFeedback.textContent = '✅ נכון! מקבל ✕';
-  } else {
-    answerFeedback.className = 'feedback wrong';
-    answerFeedback.textContent = `❌ לא נכון! המחשב מקבל ○`;
-  }
+  answerFeedback.textContent = correct ? '✅ נכון! מקבל ✕' : '❌ לא נכון! המחשב מקבל ○';
 
   setTimeout(() => {
     triviaModal.classList.add('hidden');
     if (correct) {
-      putOnBoard(state.currentCell, 'X');
-      if (!state.gameOver) computerTurn();
+      // תשובה נכונה: X לשחקן, אחר כך תור מחשב רגיל (O אחד)
+      mark(chosenCell, 'X');
+      if (!gameOver) afterPlayerTurn(false);
     } else {
-      // טעות: O בתא שנבחר + המחשב בוחר תא נוסף
-      putOnBoard(state.currentCell, 'O');
-      if (!state.gameOver) computerTurn(true); // bonus = true → תא נוסף נוסף
+      // טעות: O בתא שנבחר, אחר כך מחשב מוסיף עוד O אחד
+      mark(chosenCell, 'O');
+      if (!gameOver) afterPlayerTurn(true);
     }
-  }, 1600);
+  }, 1500);
 }
 
-// ===== Put symbol on board =====
-function putOnBoard(index, symbol) {
-  state.board[index] = symbol;
-  const cell = cells[index];
-  cell.textContent = symbol === 'X' ? '✕' : '○';
-  cell.classList.add('taken', symbol.toLowerCase());
-  const winner = checkWinner();
-  if (winner) {
-    highlightWinner(winner.line);
-    endGame(winner.symbol);
-    return;
-  }
-  if (state.board.every(c => c !== null)) {
-    endGame(null);
-  }
-}
-
-// ===== Computer Turn =====
-function computerTurn(bonus = false) {
-  state.playerTurn = false;
+// ===== After Player Turn =====
+// bonus=false → מחשב שם O אחד
+// bonus=true  → מחשב שם O אחד נוסף (כי השחקן כבר קיבל O בתא שלו)
+function afterPlayerTurn(bonus) {
+  locked = true;
   setStatus('🤖 תור המחשב...');
   setTimeout(() => {
-    const cell = pickAIMove();
-    if (cell === -1) { endGame(null); return; }
-    putOnBoard(cell, 'O');
-    if (state.gameOver) return;
+    const c1 = aiPick();
+    if (c1 === -1) { endGame(null); return; }
+    mark(c1, 'O');
+    if (gameOver) return;
+
     if (bonus) {
-      // טעות שחקן: תא נוסף למחשב
+      // תא נוסף למחשב כעונש על טעות
       setTimeout(() => {
-        const cell2 = pickAIMove();
-        if (cell2 === -1) { endGame(null); return; }
-        putOnBoard(cell2, 'O');
-        if (!state.gameOver) { state.playerTurn = true; setStatus('תורך! בחר תא ✕'); }
+        const c2 = aiPick();
+        if (c2 === -1) { endGame(null); return; }
+        mark(c2, 'O');
+        if (!gameOver) playerTurn();
       }, 600);
     } else {
-      state.playerTurn = true;
-      setStatus('תורך! בחר תא ✕');
+      playerTurn();
     }
   }, 700);
 }
 
+function playerTurn() {
+  locked = false;
+  setStatus('תורך! בחר תא ✕');
+}
+
+// ===== Mark Cell =====
+function mark(idx, sym) {
+  board[idx] = sym;
+  cellEls[idx].textContent = sym === 'X' ? '✕' : '○';
+  cellEls[idx].classList.add('taken', sym.toLowerCase());
+  const win = checkWin();
+  if (win) { win.line.forEach(i => cellEls[i].classList.add('winning')); endGame(sym); return; }
+  if (board.every(c => c !== null)) endGame(null);
+}
+
 // ===== AI =====
-function pickAIMove() {
-  // 1. נצח אם אפשר
-  const win = findMove('O');
-  if (win !== -1) return win;
-  // 2. חסום את השחקן
-  const block = findMove('X');
-  if (block !== -1) return block;
-  // 3. מרכז
-  if (state.board[4] === null) return 4;
-  // 4. פינות
-  for (const c of [0, 2, 6, 8]) if (state.board[c] === null) return c;
-  // 5. קצוות
-  for (const c of [1, 3, 5, 7]) if (state.board[c] === null) return c;
-  return state.board.findIndex(c => c === null);
-}
-
-function findMove(symbol) {
-  for (const [a, b, c] of WIN_LINES) {
-    const line = [state.board[a], state.board[b], state.board[c]];
-    if (line.filter(v => v === symbol).length === 2 && line.includes(null)) {
-      return [a, b, c][line.indexOf(null)];
+function aiPick() {
+  const threat = (s) => {
+    for (const [a,b,c] of WIN_LINES) {
+      const ln = [board[a], board[b], board[c]];
+      if (ln.filter(v => v === s).length === 2 && ln.includes(null))
+        return [a,b,c][ln.indexOf(null)];
     }
-  }
-  return -1;
+    return -1;
+  };
+  const win   = threat('O'); if (win  !== -1) return win;
+  const block = threat('X'); if (block !== -1) return block;
+  if (board[4] === null) return 4;
+  for (const c of [0,2,6,8]) if (board[c] === null) return c;
+  for (const c of [1,3,5,7]) if (board[c] === null) return c;
+  return board.findIndex(c => c === null);
 }
 
-// ===== Winner Check =====
-function checkWinner() {
+// ===== Win Check =====
+function checkWin() {
   for (const line of WIN_LINES) {
-    const [a, b, c] = line;
-    if (state.board[a] && state.board[a] === state.board[b] && state.board[a] === state.board[c]) {
-      return { symbol: state.board[a], line };
-    }
+    const [a,b,c] = line;
+    if (board[a] && board[a] === board[b] && board[a] === board[c])
+      return { sym: board[a], line };
   }
   return null;
 }
 
-function highlightWinner(line) {
-  line.forEach(i => cells[i].classList.add('winning'));
-}
-
 // ===== End Game =====
-function endGame(symbol) {
-  state.gameOver = true;
-  if (symbol === 'X') {
-    state.scores.player++;
-    resultEmoji.textContent = '🎉';
-    resultTitle.textContent = 'ניצחת!';
-    resultSubtitle.textContent = 'כל הכבוד, ענית נכון על כל השאלות שצריך!';
-  } else if (symbol === 'O') {
-    state.scores.computer++;
-    resultEmoji.textContent = '🤖';
-    resultTitle.textContent = 'המחשב ניצח!';
-    resultSubtitle.textContent = 'נסה שוב, אתה יכול לנצח!';
+function endGame(sym) {
+  gameOver = true;
+  locked   = true;
+  if (sym === 'X') {
+    scores.player++;
+    resultEmoji.textContent   = '🎉';
+    resultTitle.textContent   = 'ניצחת!';
+    resultSubtitle.textContent= 'כל הכבוד!';
+  } else if (sym === 'O') {
+    scores.computer++;
+    resultEmoji.textContent   = '🤖';
+    resultTitle.textContent   = 'המחשב ניצח!';
+    resultSubtitle.textContent= 'נסה שוב!';
   } else {
-    state.scores.draws++;
-    resultEmoji.textContent = '🤝';
-    resultTitle.textContent = 'תיקו!';
-    resultSubtitle.textContent = 'משחק מרגש! משחק חדש?';
+    scores.draws++;
+    resultEmoji.textContent   = '🤝';
+    resultTitle.textContent   = 'תיקו!';
+    resultSubtitle.textContent= 'משחק מרגש!';
   }
-  updateScoreboard();
+  updateScores();
   resultOverlay.classList.remove('hidden');
 }
 
 // ===== New Game =====
 function newGame() {
-  state.board = Array(9).fill(null);
-  state.currentCell = null;
-  state.gameOver = false;
-  state.playerTurn = true;
-
-  cells.forEach(cell => {
-    cell.textContent = '';
-    cell.className = 'cell';
-  });
-
+  board    = Array(9).fill(null);
+  gameOver = false;
+  locked   = false;
+  chosenCell = null;
+  cellEls.forEach(c => { c.textContent = ''; c.className = 'cell'; });
   triviaModal.classList.add('hidden');
   resultOverlay.classList.add('hidden');
   setStatus('בחר תא כדי לענות על שאלת טריוויה!');
 }
 
 function resetAll() {
-  state.scores = { player: 0, computer: 0, draws: 0 };
-  updateScoreboard();
+  scores = { player: 0, computer: 0, draws: 0 };
+  updateScores();
   newGame();
 }
 
-function updateScoreboard() {
-  playerScoreEl.textContent  = state.scores.player;
-  computerScoreEl.textContent= state.scores.computer;
-  drawScoreEl.textContent    = state.scores.draws;
+function updateScores() {
+  playerScoreEl.textContent  = scores.player;
+  computerScoreEl.textContent= scores.computer;
+  drawScoreEl.textContent    = scores.draws;
 }
 
 function setStatus(msg) {
   statusText.style.opacity = '0';
-  setTimeout(() => {
-    statusText.textContent = msg;
-    statusText.style.opacity = '1';
-  }, 150);
+  setTimeout(() => { statusText.textContent = msg; statusText.style.opacity = '1'; }, 150);
 }
