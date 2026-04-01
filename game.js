@@ -287,21 +287,13 @@ function handleAnswer(selectedIndex, clickedBtn) {
   setTimeout(() => {
     triviaModal.classList.add('hidden');
     if (correct) {
-      placeSymbol(state.currentCell, 'X');
+      // Player gets X, then computer takes its turn
+      placeSymbolSilent(state.currentCell, 'X');
+      if (!state.gameOver) computerTurn();
     } else {
-      // Computer gets O in the cell the player chose
+      // Computer gets O in the cell the player chose, then takes another turn
       placeSymbolSilent(state.currentCell, 'O');
-      if (!state.gameOver) {
-        // Then computer takes an extra strategic turn
-        const aiCell = pickAIMove();
-        if (aiCell !== -1) {
-          setStatus('🤖 המחשב מנצל את התור הנוסף שלו...');
-          setTimeout(() => placeSymbol(aiCell, 'O'), 700);
-        } else {
-          // Board full after silent place
-          setTimeout(() => endGame(null), 300);
-        }
-      }
+      if (!state.gameOver) computerTurn();
     }
   }, 1600);
 }
@@ -339,6 +331,17 @@ function placeSymbol(index, symbol) {
     return;
   }
   setStatus('תורך! בחר תא ✕');
+}
+
+// ===== Computer Turn =====
+function computerTurn() {
+  const aiCell = pickAIMove();
+  if (aiCell === -1) {
+    setTimeout(() => endGame(null), 300);
+    return;
+  }
+  setStatus('🤖 המחשב חושב...');
+  setTimeout(() => placeSymbol(aiCell, 'O'), 600);
 }
 
 // ===== AI – Minimax =====
