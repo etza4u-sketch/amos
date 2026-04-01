@@ -174,6 +174,7 @@ const state = {
   board: Array(9).fill(null),
   currentCell: null,
   gameOver: false,
+  computerThinking: false,
   scores: { player: 0, computer: 0, draws: 0 },
   usedQuestions: new Set(),
   hintUsed: false,
@@ -216,7 +217,7 @@ globalNewGame.addEventListener('click', newGame);
 
 // ===== Cell Click =====
 function onCellClick(index) {
-  if (state.gameOver || state.board[index] !== null) return;
+  if (state.gameOver || state.computerThinking || state.board[index] !== null) return;
   state.currentCell = index;
   openTrivia();
 }
@@ -287,61 +288,43 @@ function handleAnswer(selectedIndex, clickedBtn) {
   setTimeout(() => {
     triviaModal.classList.add('hidden');
     if (correct) {
-      // Player gets X, then computer takes its turn
-      placeSymbolSilent(state.currentCell, 'X');
-      if (!state.gameOver) computerTurn();
+      putOnBoard(state.currentCell, 'X');
     } else {
-      // Computer gets O in the cell the player chose, then takes another turn
-      placeSymbolSilent(state.currentCell, 'O');
-      if (!state.gameOver) computerTurn();
+      putOnBoard(state.currentCell, 'O');
     }
+    if (!state.gameOver) computerTurn();
   }, 1600);
 }
 
-// ===== Place Symbol (silent – no win/draw check) =====
-function placeSymbolSilent(index, symbol) {
+// ===== Put symbol on board =====
+function putOnBoard(index, symbol) {
   state.board[index] = symbol;
   const cell = cells[index];
   cell.textContent = symbol === 'X' ? '✕' : '○';
   cell.classList.add('taken', symbol.toLowerCase());
-  // Check win immediately – if computer won right here, stop
   const winner = checkWinner();
   if (winner) {
     highlightWinner(winner.line);
-    setTimeout(() => endGame(winner.symbol), 500);
-    state.gameOver = true;
-  }
-}
-
-// ===== Place Symbol =====
-function placeSymbol(index, symbol) {
-  state.board[index] = symbol;
-  const cell = cells[index];
-  cell.textContent = symbol === 'X' ? '✕' : '○';
-  cell.classList.add('taken', symbol.toLowerCase());
-
-  const winner = checkWinner();
-  if (winner) {
-    highlightWinner(winner.line);
-    setTimeout(() => endGame(winner.symbol), 500);
+    endGame(winner.symbol);
     return;
   }
   if (state.board.every(c => c !== null)) {
-    setTimeout(() => endGame(null), 300);
-    return;
+    endGame(null);
   }
-  setStatus('תורך! בחר תא ✕');
 }
 
 // ===== Computer Turn =====
 function computerTurn() {
+  if (state.gameOver) return;
   const aiCell = pickAIMove();
-  if (aiCell === -1) {
-    setTimeout(() => endGame(null), 300);
-    return;
-  }
-  setStatus('🤖 המחשב חושב...');
-  setTimeout(() => placeSymbol(aiCell, 'O'), 600);
+  if (aiCell === -1) { endGame(null); return; }
+  state.computerThinking = true;
+  setStatus('🤖 המחשב בוחר מהלך...');
+  setTimeout(() => {
+    putOnBoard(aiCell, 'O');
+    state.computerThinking = false;
+    if (!state.gameOver) setStatus('תורך! בחר תא ✕');
+  }, 700);
 }
 
 // ===== AI – Minimax =====
@@ -402,6 +385,7 @@ function highlightWinner(line) {
 // ===== End Game =====
 function endGame(symbol) {
   state.gameOver = true;
+  state.computerThinking = false;
   if (symbol === 'X') {
     state.scores.player++;
     resultEmoji.textContent = '🎉';
@@ -427,6 +411,7 @@ function newGame() {
   state.board = Array(9).fill(null);
   state.currentCell = null;
   state.gameOver = false;
+  state.computerThinking = false;
 
   cells.forEach(cell => {
     cell.textContent = '';
