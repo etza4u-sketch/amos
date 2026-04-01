@@ -174,6 +174,7 @@ const state = {
   board: Array(9).fill(null),
   currentCell: null,
   gameOver: false,
+  playerTurn: true,          // true = player's turn, false = computer's turn
   scores: { player: 0, computer: 0, draws: 0 },
   usedQuestions: new Set(),
   hintUsed: false,
@@ -216,7 +217,7 @@ globalNewGame.addEventListener('click', newGame);
 
 // ===== Cell Click =====
 function onCellClick(index) {
-  if (state.gameOver || state.board[index] !== null) return;
+  if (state.gameOver || !state.playerTurn || state.board[index] !== null) return;
   state.currentCell = index;
   openTrivia();
 }
@@ -291,7 +292,7 @@ function handleAnswer(selectedIndex, clickedBtn) {
     } else {
       putOnBoard(state.currentCell, 'O');
     }
-    if (!state.gameOver) setStatus('תורך! בחר תא ✕');
+    if (!state.gameOver) computerTurn();
   }, 1600);
 }
 
@@ -310,6 +311,48 @@ function putOnBoard(index, symbol) {
   if (state.board.every(c => c !== null)) {
     endGame(null);
   }
+}
+
+// ===== Computer Turn =====
+function computerTurn() {
+  state.playerTurn = false;
+  setStatus('🤖 תור המחשב...');
+  setTimeout(() => {
+    const cell = pickAIMove();
+    if (cell === -1) { endGame(null); return; }
+    putOnBoard(cell, 'O');
+    if (!state.gameOver) {
+      state.playerTurn = true;
+      setStatus('תורך! בחר תא ✕');
+    }
+  }, 700);
+}
+
+// ===== AI =====
+function pickAIMove() {
+  // 1. נצח אם אפשר
+  const win = findMove('O');
+  if (win !== -1) return win;
+  // 2. חסום את השחקן
+  const block = findMove('X');
+  if (block !== -1) return block;
+  // 3. מרכז
+  if (state.board[4] === null) return 4;
+  // 4. פינות
+  for (const c of [0, 2, 6, 8]) if (state.board[c] === null) return c;
+  // 5. קצוות
+  for (const c of [1, 3, 5, 7]) if (state.board[c] === null) return c;
+  return state.board.findIndex(c => c === null);
+}
+
+function findMove(symbol) {
+  for (const [a, b, c] of WIN_LINES) {
+    const line = [state.board[a], state.board[b], state.board[c]];
+    if (line.filter(v => v === symbol).length === 2 && line.includes(null)) {
+      return [a, b, c][line.indexOf(null)];
+    }
+  }
+  return -1;
 }
 
 // ===== Winner Check =====
@@ -355,6 +398,7 @@ function newGame() {
   state.board = Array(9).fill(null);
   state.currentCell = null;
   state.gameOver = false;
+  state.playerTurn = true;
 
   cells.forEach(cell => {
     cell.textContent = '';
