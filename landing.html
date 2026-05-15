@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>חוה שץ | טיפול ואימון NLP</title>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #c9a84c;
+      --gold-light: #e8d5a3;
+      --dark: #1a1a2e;
+      --dark2: #16213e;
+      --mid: #0f3460;
+      --white: #ffffff;
+      --offwhite: #f9f6f0;
+      --text: #2d2d2d;
+      --muted: #666;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Heebo', sans-serif;
+      background: var(--offwhite);
+      color: var(--text);
+      line-height: 1.7;
+      direction: rtl;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--dark2) 50%, var(--mid) 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 70% 30%, rgba(201,168,76,0.12) 0%, transparent 60%);
+    }
+
+    .hero-badge {
+      display: inline-block;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      font-size: 13px;
+      letter-spacing: 2px;
+      padding: 6px 20px;
+      border-radius: 50px;
+      margin-bottom: 28px;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 4.2rem);
+      font-weight: 900;
+      color: var(--white);
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 span { color: var(--gold); }
+
+    .hero-sub {
+      font-size: clamp(1.05rem, 2.5vw, 1.3rem);
+      color: rgba(255,255,255,0.75);
+      max-width: 580px;
+      margin: 0 auto 40px;
+    }
+
+    .btn-primary {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--dark);
+      font-size: 1.05rem;
+      font-weight: 700;
+      padding: 16px 42px;
+      border-radius: 50px;
+      text-decoration: none;
+      transition: transform .2s, box-shadow .2s;
+      box-shadow: 0 4px 20px rgba(201,168,76,0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(201,168,76,0.55);
+    }
+
+    .hero-scroll {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.4);
+      font-size: 13px;
+      letter-spacing: 1px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hero-scroll::after {
+      content: '';
+      width: 1px;
+      height: 40px;
+      background: rgba(255,255,255,0.25);
+    }
+
+    /* ── SECTION WRAPPER ── */
+    section { padding: 90px 24px; }
+    .container { max-width: 960px; margin: 0 auto; }
+
+    .section-label {
+      font-size: 12px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 900;
+      color: var(--dark);
+      line-height: 1.25;
+      margin-bottom: 16px;
+    }
+
+    .section-title span { color: var(--gold); }
+
+    .section-text {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 640px;
+    }
+
+    /* ── PROBLEM ── */
+    .problem { background: var(--white); }
+
+    .pain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+
+    .pain-card {
+      background: var(--offwhite);
+      border-right: 4px solid var(--gold);
+      padding: 28px 24px;
+      border-radius: 12px;
+    }
+
+    .pain-card p {
+      font-size: 1rem;
+      color: var(--text);
+      font-style: italic;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how { background: var(--offwhite); }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 32px;
+      margin-top: 52px;
+      counter-reset: steps;
+    }
+
+    .step {
+      text-align: center;
+      padding: 36px 24px;
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      position: relative;
+    }
+
+    .step-num {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: var(--dark);
+      font-weight: 900;
+      font-size: 1.3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .step h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--dark);
+    }
+
+    .step p { font-size: 0.95rem; color: var(--muted); }
+
+    /* ── BENEFITS ── */
+    .benefits { background: var(--dark); color: var(--white); }
+    .benefits .section-title { color: var(--white); }
+    .benefits .section-text { color: rgba(255,255,255,0.65); }
+
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 28px;
+      margin-top: 52px;
+    }
+
+    .benefit {
+      text-align: center;
+      padding: 36px 20px;
+      border: 1px solid rgba(201,168,76,0.25);
+      border-radius: 16px;
+      transition: border-color .2s, transform .2s;
+    }
+
+    .benefit:hover {
+      border-color: var(--gold);
+      transform: translateY(-4px);
+    }
+
+    .benefit-icon {
+      font-size: 2.4rem;
+      margin-bottom: 16px;
+    }
+
+    .benefit h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    .benefit p { font-size: 0.9rem; color: rgba(255,255,255,0.6); }
+
+    /* ── ABOUT ── */
+    .about { background: var(--white); }
+
+    .about-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+
+    @media (max-width: 700px) { .about-inner { grid-template-columns: 1fr; gap: 40px; } }
+
+    .about-photo {
+      width: 100%;
+      aspect-ratio: 4/5;
+      border-radius: 20px;
+      background: linear-gradient(160deg, var(--dark) 0%, var(--mid) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.3);
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      overflow: hidden;
+    }
+
+    .about-text blockquote {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--dark);
+      border-right: 4px solid var(--gold);
+      padding-right: 20px;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .about-text p { color: var(--muted); margin-bottom: 16px; }
+
+    /* ── TESTIMONIAL ── */
+    .testimonials { background: var(--offwhite); }
+
+    .testimonial-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 28px;
+      margin-top: 48px;
+    }
+
+    .testimonial {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      position: relative;
+    }
+
+    .testimonial::before {
+      content: '"';
+      position: absolute;
+      top: 16px;
+      left: 24px;
+      font-size: 5rem;
+      color: var(--gold-light);
+      font-family: Georgia, serif;
+      line-height: 1;
+    }
+
+    .testimonial p {
+      font-size: 0.98rem;
+      color: var(--text);
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .testimonial-author {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    /* ── CTA ── */
+    .cta-section {
+      background: linear-gradient(135deg, var(--dark) 0%, var(--mid) 100%);
+      text-align: center;
+      color: var(--white);
+    }
+
+    .cta-section .section-title { color: var(--white); }
+
+    .cta-section p {
+      color: rgba(255,255,255,0.7);
+      font-size: 1.1rem;
+      max-width: 540px;
+      margin: 0 auto 40px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-secondary {
+      display: inline-block;
+      background: transparent;
+      color: var(--gold);
+      border: 2px solid var(--gold);
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 14px 36px;
+      border-radius: 50px;
+      text-decoration: none;
+      transition: background .2s, color .2s;
+    }
+
+    .btn-secondary:hover { background: var(--gold); color: var(--dark); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--dark);
+      color: rgba(255,255,255,0.4);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 0.85rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    footer a { color: var(--gold); text-decoration: none; }
+
+    /* ── STICKY CTA BAR (mobile) ── */
+    .sticky-bar {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      left: 0;
+      background: var(--gold);
+      z-index: 100;
+      padding: 14px 24px;
+      text-align: center;
+    }
+
+    .sticky-bar a {
+      color: var(--dark);
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 600px) { .sticky-bar { display: block; } }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; right: 0; left: 0;
+      z-index: 99;
+      padding: 18px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(26,26,46,0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+    }
+
+    .nav-logo {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--white);
+      letter-spacing: 1px;
+    }
+
+    .nav-logo span { color: var(--gold); }
+
+    .nav-cta {
+      background: var(--gold);
+      color: var(--dark);
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 10px 24px;
+      border-radius: 50px;
+      text-decoration: none;
+      transition: opacity .2s;
+    }
+
+    .nav-cta:hover { opacity: .85; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">חוה שץ <span>| NLP</span></div>
+  <a class="nav-cta" href="tel:0544909477">📞 צרי קשר</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">מטפלת ומאמנת מוסמכת NLP</div>
+  <h1>שני את התבנית.<br /><span>שני את חייך.</span></h1>
+  <p class="hero-sub">
+    טיפול ממוקד ועמוק שמאפשר לך לשחרר דפוסים מגבילים,
+    לרפא טראומות ולבנות חיים שאת בוחרת בהם — בזמן קצר מהצפוי.
+  </p>
+  <a class="btn-primary" href="tel:0544909477">קבעי פגישת היכרות חינם</a>
+  <div class="hero-scroll">גלול למטה</div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem">
+  <div class="container">
+    <div class="section-label">את לא לבד</div>
+    <h2 class="section-title">אם אחד מהמשפטים הבאים<br /><span>נשמע מוכר</span> — הגעת למקום הנכון</h2>
+    <div class="pain-grid">
+      <div class="pain-card"><p>"ניסיתי הכל, אבל הדפוסים הישנים פשוט לא עוזבים אותי."</p></div>
+      <div class="pain-card"><p>"יש אירוע מהעבר שמשפיע על כל ההחלטות שלי עד היום."</p></div>
+      <div class="pain-card"><p>"אני יודע/ת מה צריך לעשות — אבל משהו בתוכי עוצר אותי."</p></div>
+      <div class="pain-card"><p>"אני מרגיש/ה תקוע/ה. רוצה שינוי אמיתי, לא עוד שיחות."</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="container">
+    <div class="section-label">איך זה עובד</div>
+    <h2 class="section-title">תהליך <span>פשוט, עמוק</span> ומהיר</h2>
+    <p class="section-text">שיטת NLP מאפשרת להגיע ישירות לשורש — לדפוסי החשיבה הלא-מודעים שמניעים את ההתנהגות שלך.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>פגישת מיפוי</h3>
+        <p>מבינים יחד מה עוצר אותך ומה המטרה שאת/ה רוצה להשיג</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>עבודה על השורש</h3>
+        <p>מאתרים ומשנים את תבניות החשיבה שגורמות לחסימה — לא רק את הסימפטומים</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>שחרור הטראומה</h3>
+        <p>מנטרלים את העוררות הרגשית לאירועים קשים, כך שהם מפסיקים להשפיע</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>חיים שבחרת</h3>
+        <p>יוצאים עם כלים, שינוי אמיתי וחופש פנימי שמרגישים כבר בפגישות הראשונות</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFITS -->
+<section class="benefits">
+  <div class="container">
+    <div class="section-label">מה תקבל/י</div>
+    <h2 class="section-title">הרגשה ש<span>שנים</span> לא הכרת</h2>
+    <p class="section-text">הטיפול הוא ממוקד ועמוק, והשפעתו מהירה — כי אנחנו עובדים היישר על המקור.</p>
+    <div class="benefits-grid">
+      <div class="benefit">
+        <div class="benefit-icon">🕊️</div>
+        <h3>שחרור רגשי</h3>
+        <p>הטעינה מהעבר מפסיקה לשלוט בהווה שלך</p>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">⚡</div>
+        <h3>עוצמה אישית</h3>
+        <p>אתה מרגיש/ה יכול/ה, רוצה ומסוגל/ת</p>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">🎯</div>
+        <h3>מטרות שמתממשות</h3>
+        <p>פועל/ת אחרת ומשיג/ה את מה שרצית</p>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">🌿</div>
+        <h3>נינוחות ושלווה</h3>
+        <p>מפסיק/ה לשרוד ומתחיל/ה לחיות</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about">
+  <div class="container">
+    <div class="about-inner">
+      <div class="about-photo">[ תמונה מקצועית ]</div>
+      <div class="about-text">
+        <div class="section-label">אודותי</div>
+        <blockquote>"יש בידיכם את האפשרות לשנות את מסלול חייכם. בחרו בכך."</blockquote>
+        <p>
+          אני חוה שץ, מטפלת ומאמנת מוסמכת בשיטת NLP.
+          אני מאמינה שכל אדם מסוגל לשינוי — כשמסירים את המחסומים הנכונים.
+        </p>
+        <p>
+          שיטת NLP מאפשרת לנו לשנות את תבניות החשיבה שמייצרות את התוצאות שאנחנו לא רוצים.
+          כולל ריפוי של טראומות — בצורה שמהירה, ממוקדת ויעילה הרבה יותר מטיפולים מסורתיים.
+        </p>
+        <p>
+          הגישה שלי: ישירה, חמה ותוצאות-מוכוונת. אנחנו לא מבזבזים זמן — אנחנו עובדים.
+        </p>
+        <a class="btn-primary" href="https://business-digitalcard.co.il/chava-shatz/" target="_blank" style="margin-top:8px;">הכרטיס הדיגיטלי שלי</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <div class="container">
+    <div class="section-label">מה אומרים לקוחות</div>
+    <h2 class="section-title">שינוי <span>אמיתי</span>, במילים שלהם</h2>
+    <div class="testimonial-grid">
+      <div class="testimonial">
+        <p>אחרי שנים של ניסיונות כושלים, שלושה טיפולים עם חוה שינו דפוס שליווה אותי 15 שנה. אני עדיין לא מאמין שזה קרה כל כך מהר.</p>
+        <div class="testimonial-author">— ד., 42</div>
+      </div>
+      <div class="testimonial">
+        <p>ניגשתי עם פחד מבמה שמנע ממני להתקדם בקריירה. היום אני מרצה בפני מאות אנשים. חוה נגעה בבדיוק במקום הנכון.</p>
+        <div class="testimonial-author">— מ., 35</div>
+      </div>
+      <div class="testimonial">
+        <p>החוויה הטראומטית שחשבתי שאצטרך לחיות איתה לנצח — נעלמה. לא פשוט קיבלתי כלים, פשוט היא נעלמה.</p>
+        <div class="testimonial-author">— ש., 29</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <div class="section-label">הצעד הבא</div>
+    <h2 class="section-title">מסלול חייך יכול<br /><span>להשתנות היום</span></h2>
+    <p>פגישת היכרות ראשונה — בלי התחייבות, בלי לחץ. רק שיחה אמיתית.</p>
+    <div class="cta-buttons">
+      <a class="btn-primary" href="tel:0544909477">📞 054-4909477</a>
+      <a class="btn-secondary" href="https://business-digitalcard.co.il/chava-shatz/" target="_blank">הכרטיס הדיגיטלי</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2025 חוה שץ — טיפול ואימון NLP | <a href="tel:0544909477">054-4909477</a> | <a href="https://business-digitalcard.co.il/chava-shatz/" target="_blank">business-digitalcard.co.il/chava-shatz</a></p>
+</footer>
+
+<!-- STICKY MOBILE BAR -->
+<div class="sticky-bar">
+  <a href="tel:0544909477">📞 התקשרי עכשיו — 054-4909477</a>
+</div>
+
+</body>
+</html>
