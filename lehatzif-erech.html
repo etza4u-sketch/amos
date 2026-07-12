@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>להציף ערך | מחולל אסטרטגיית "המהדק האדום"</title>
+<title>להציף ערך | משחק המהדק האדום</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -22,6 +22,10 @@
     --shadow: 0 12px 36px rgba(0,0,0,0.45);
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+
   html { scroll-behavior: smooth; }
 
   body {
@@ -37,52 +41,20 @@
     padding-bottom: 60px;
   }
 
-  header {
-    padding: 48px 20px 20px;
-    text-align: center;
-  }
+  header { padding: 44px 20px 8px; text-align: center; }
   .clip-icon { font-size: 2.2rem; display: inline-block; transform: rotate(-15deg); }
   header h1 {
     font-size: clamp(1.7rem, 4.4vw, 2.6rem);
     font-weight: 900;
-    margin: 10px 0 10px;
+    margin: 10px 0 8px;
     background: linear-gradient(135deg, var(--red), var(--gold));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  header p {
-    color: var(--muted);
-    max-width: 560px;
-    margin: 0 auto;
-    font-size: 1rem;
-  }
+  header p { color: var(--muted); max-width: 480px; margin: 0 auto; font-size: 1rem; }
 
-  .steps-bar {
-    display: flex;
-    justify-content: center;
-    gap: 0;
-    max-width: 480px;
-    margin: 28px auto 0;
-  }
-  .step {
-    flex: 1;
-    text-align: center;
-    padding: 8px 4px;
-    font-size: 0.78rem;
-    color: var(--muted);
-    border-bottom: 2px solid var(--border);
-    transition: all 0.3s;
-  }
-  .step-num { display: block; font-size: 1rem; font-weight: 700; margin-bottom: 2px; }
-  .step.active { color: var(--gold); border-color: var(--gold); }
-  .step.done { color: var(--red); border-color: var(--red); }
-
-  main {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 32px 20px 0;
-  }
+  main { max-width: 620px; margin: 0 auto; padding: 28px 20px 0; }
 
   .card {
     background: var(--surface);
@@ -94,41 +66,29 @@
   }
 
   label { display: block; font-size: 0.88rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
-  .field { margin-bottom: 18px; }
-  input[type="text"], textarea, select {
+  .field { margin-bottom: 16px; }
+  input[type="text"], textarea {
     width: 100%;
     background: var(--surface2);
     border: 1.5px solid var(--border);
     border-radius: 10px;
     color: var(--text);
     padding: 12px 14px;
-    font-size: 0.95rem;
+    font-size: 0.98rem;
     font-family: inherit;
     transition: border-color 0.2s;
   }
-  textarea { resize: vertical; min-height: 70px; }
-  input[type="text"]:focus, textarea:focus, select:focus {
-    outline: none;
-    border-color: var(--gold);
+  textarea { resize: vertical; min-height: 76px; }
+  input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--gold); }
+  input[type="text"]:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--gold); outline-offset: 2px;
   }
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
-  .value-row { display: grid; grid-template-columns: 1fr 90px; gap: 10px; }
-  .hint { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
 
   .btn {
-    border: none;
-    border-radius: 12px;
-    padding: 13px 22px;
-    font-size: 0.95rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
+    border: none; border-radius: 12px; padding: 13px 22px;
+    font-size: 0.98rem; font-weight: 700; cursor: pointer;
+    transition: all 0.2s; display: inline-flex; align-items: center;
+    justify-content: center; gap: 8px; width: 100%;
   }
   .btn-primary { background: linear-gradient(135deg, var(--red), #c22943); color: #fff; }
   .btn-primary:hover { filter: brightness(1.12); transform: translateY(-1px); }
@@ -136,102 +96,78 @@
   .btn-gold:hover { filter: brightness(1.1); transform: translateY(-1px); }
   .btn-outline { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
   .btn-outline:hover { color: var(--text); border-color: var(--muted); }
-  .btn-row { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
-  .btn-row .btn { flex: 1; min-width: 140px; }
+  .btn:disabled { opacity: 0.4; cursor: default; transform: none !important; filter: none !important; }
+  .game-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .btn-row .btn { flex: 1; min-width: 150px; }
 
   .hidden { display: none !important; }
 
-  /* Result view */
-  .hook-box {
-    background: linear-gradient(135deg, var(--red-soft), var(--gold-soft));
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 22px 22px;
-    text-align: center;
-    margin-bottom: 22px;
+  /* Rules disclosure */
+  details.rules-details { margin-top: 18px; }
+  details.rules-details summary {
+    cursor: pointer; color: var(--gold); font-size: 0.88rem; font-weight: 700;
+    list-style: none; display: inline-flex; align-items: center; gap: 6px;
   }
-  .hook-label { font-size: 0.75rem; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
-  .hook-text { font-size: 1.25rem; font-weight: 700; line-height: 1.5; }
+  details.rules-details summary::-webkit-details-marker { display: none; }
+  details.rules-details summary::before { content: '▸'; transition: transform 0.2s; }
+  details.rules-details[open] summary::before { transform: rotate(90deg); }
+  .plain-ol { margin: 12px 0 0; padding-inline-start: 20px; font-size: 0.88rem; color: var(--muted); }
+  .plain-ol li { margin-bottom: 6px; }
 
-  /* Understanding echo */
-  .understand-card { border-color: rgba(242,201,76,0.35); }
-  .understand-title { font-size: 0.78rem; letter-spacing: 0.04em; color: var(--gold); text-transform: uppercase; margin-bottom: 10px; font-weight: 800; }
-  .understand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-  @media (max-width: 520px) { .understand-grid { grid-template-columns: 1fr; } }
-  .understand-item .k { font-size: 0.74rem; color: var(--muted); margin-bottom: 2px; }
-  .understand-item .v { font-size: 0.98rem; font-weight: 600; }
-  .understand-item .v.money { font-variant-numeric: tabular-nums; color: var(--gold); font-size: 1.05rem; }
-  .estimate-flag { font-size: 0.72rem; color: var(--muted); font-weight: 400; }
-
-  .rung-value { font-size: 0.85rem; color: var(--gold); font-variant-numeric: tabular-nums; margin-top: 6px; }
-  .rung-value .mult { color: var(--muted); }
-
-  .section-title {
-    font-size: 1.05rem;
-    font-weight: 800;
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .section-title .n { color: var(--gold); }
-
-  /* Ladder */
-  .ladder { position: relative; padding-inline-start: 0; list-style: none; margin-bottom: 6px; }
-  .ladder li {
-    position: relative;
+  /* Story feed */
+  #feed { display: flex; flex-direction: column; gap: 12px; }
+  .step-card {
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px 14px 16px;
-    margin-bottom: 10px;
+    border-radius: 14px;
+    padding: 16px 18px;
+    animation: cardIn 0.45s ease both;
   }
-  .ladder li.crisis { border-color: rgba(230,57,80,0.5); background: rgba(230,57,80,0.08); }
-  .ladder li.final { border-color: rgba(242,201,76,0.6); background: rgba(242,201,76,0.08); }
-  .rung-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px; }
-  .rung-index { font-weight: 900; color: var(--gold); font-size: 0.9rem; }
-  .rung-type { font-size: 0.72rem; color: var(--muted); background: rgba(255,255,255,0.05); padding: 2px 9px; border-radius: 20px; white-space: nowrap; }
-  .rung-asset { font-size: 0.98rem; font-weight: 600; }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .step-card.flash { animation: cardFlash 0.5s ease; }
+  @keyframes cardFlash {
+    0% { background: rgba(242,201,76,0.18); }
+    100% { background: var(--surface2); }
+  }
+  .step-card.final { border-color: rgba(242,201,76,0.6); background: rgba(242,201,76,0.09); }
+  .step-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .step-icon { font-size: 1.1rem; }
+  .step-label { font-size: 0.74rem; letter-spacing: 0.03em; color: var(--muted); text-transform: uppercase; font-weight: 700; }
+  .step-text { font-size: 0.98rem; }
+  .step-tip {
+    margin-top: 10px; font-size: 0.82rem; color: var(--gold);
+    background: var(--gold-soft); border-radius: 8px; padding: 8px 10px;
+  }
+  .step-copy {
+    margin-top: 10px; background: transparent; border: 1px solid var(--border);
+    color: var(--muted); font-size: 0.78rem; padding: 6px 12px; border-radius: 20px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .step-copy:hover { color: var(--text); border-color: var(--muted); }
 
-  ul.plain { list-style: none; }
-  ul.plain li {
-    padding: 10px 14px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    margin-bottom: 8px;
-    font-size: 0.92rem;
+  .finale-banner {
+    text-align: center; font-size: 1.15rem; font-weight: 800; margin-top: 4px;
+    background: linear-gradient(135deg, var(--red), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   }
 
-  .directive {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    padding: 12px 14px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    margin-bottom: 8px;
-    font-size: 0.9rem;
+  .confetti-wrap { position: relative; height: 0; }
+  .confetti {
+    position: absolute; top: -10px; font-size: 1.1rem;
+    animation: fall 2.4s ease-in forwards;
   }
-  .directive .mark { color: var(--gold); font-weight: 900; flex-shrink: 0; }
-  .directive b { display: block; margin-bottom: 2px; }
-  .directive span.sub { color: var(--muted); }
+  @keyframes fall {
+    to { transform: translateY(220px) rotate(360deg); opacity: 0; }
+  }
 
   .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--gold);
-    color: #241b02;
-    padding: 10px 20px;
-    border-radius: 30px;
-    font-weight: 700;
-    font-size: 0.88rem;
-    box-shadow: var(--shadow);
-    z-index: 200;
-    transition: opacity 0.3s;
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--gold); color: #241b02; padding: 10px 20px; border-radius: 30px;
+    font-weight: 700; font-size: 0.88rem; box-shadow: var(--shadow); z-index: 200;
   }
   .toast.hidden { display: none; }
 
@@ -243,194 +179,101 @@
 <header>
   <span class="clip-icon">📎</span>
   <h1>להציף ערך</h1>
-  <p>מחולל אסטרטגיית "המהדק האדום": הזינו את המוצר או השירות שלכם, וקבלו סולם
-    חליפין עולה, הוק ויראלי, ותוכנית "בנייה בפומבי" — כדי לקבל הרבה יותר על
-    מה שיש לכם.</p>
-
-  <div class="steps-bar">
-    <div class="step active" id="step-bar-1"><span class="step-num">1</span>פרטי המוצר</div>
-    <div class="step" id="step-bar-2"><span class="step-num">2</span>אסטרטגיית ערך</div>
-  </div>
+  <p>מתחילים במה שכבר יש לכם. כל צעד בסחר עולה קצת יותר. בסוף — החלום.</p>
 </header>
 
 <main>
 
-  <!-- STEP 1: FORM -->
-  <section class="card" id="form-view">
+  <!-- INTRO -->
+  <section class="card" id="intro-view">
     <div class="field">
-      <label for="prod-name">שם המוצר / השירות / המותג</label>
-      <input type="text" id="prod-name" placeholder='למשל: "סטודיו לעיצוב פנים", "אפליקציית ניהול תזרים"' />
-    </div>
-    <div class="field">
-      <label for="prod-desc">תיאור קצר (משפט–שניים)</label>
-      <textarea id="prod-desc" placeholder="במה זה עוזר ולמי?"></textarea>
-    </div>
-    <div class="row2">
-      <div class="field">
-        <label for="prod-cat">קטגוריה</label>
-        <select id="prod-cat">
-          <option value="physical">מוצר פיזי</option>
-          <option value="service">שירות</option>
-          <option value="saas">דיגיטלי / SaaS</option>
-          <option value="creative">תוכן ויצירה</option>
-          <option value="local">עסק מקומי</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="prod-goal">מטרת הקמפיין</label>
-        <select id="prod-goal">
-          <option value="sale">מכירה</option>
-          <option value="leads">גיוס לקוחות</option>
-          <option value="brand">מיתוג</option>
-          <option value="investors">גיוס משקיעים</option>
-        </select>
-      </div>
+      <label for="start-item">מה יש לך להתחיל איתו?</label>
+      <textarea id="start-item" placeholder='למשל: "אוסף מטליות לחות ממותגות ממסעדות מרחבי העולם, כולל כמה כפולות נדירות"'></textarea>
     </div>
     <div class="field">
-      <label for="prod-value">כמה זה שווה היום? (מחיר/שווי נוכחי)</label>
-      <div class="value-row">
-        <input type="text" inputmode="decimal" id="prod-value" placeholder="למשל: 450" />
-        <select id="prod-currency">
-          <option value="₪">₪</option>
-          <option value="$">$</option>
-          <option value="€">€</option>
-        </select>
-      </div>
-      <div class="hint">בלי המספר הזה אי אפשר להציף ערך — אם אין לכם מספר מדויק, נעריך לפי הקטגוריה ונציין שזו הערכה.</div>
+      <label for="dream-goal">לאן החלום לוקח אתכם? (אופציונלי)</label>
+      <input type="text" id="dream-goal" placeholder='למשל: "פרארי" — אם לא תגידו, נבחר לכם חלום בעצמנו' />
     </div>
-    <button class="btn btn-primary" id="generate-btn">📎 הבינו את המוצר ← ולהציף ערך</button>
+    <button class="btn btn-primary" id="start-btn">🎬 תתחילו לסחור</button>
+
+    <details class="rules-details">
+      <summary>איך המשחק הזה עובד, ב-30 שניות</summary>
+      <ol class="plain-ol">
+        <li>מתחילים במה שכבר יש לכם — בלי בושה, בדיוק כמו מהדק אדום.</li>
+        <li>מפרסמים את זה בפומבי, ונותנים לקהל להתחרות על ההצעות.</li>
+        <li>כל "כן" מוביל לצעד קצת יותר גדול — עד שמגיעים למשהו שאי אפשר לקנות בכסף.</li>
+        <li>מתעדים הכל, כולל את הכישלונות — זה מה שהופך עוקבים לשגרירים.</li>
+        <li>ואז, יום אחד, מישהו מציע את החלום עצמו.</li>
+      </ol>
+    </details>
   </section>
 
-  <!-- STEP 2: RESULT -->
-  <section id="result-view" class="hidden">
-
-    <div class="card understand-card">
-      <div class="understand-title">הבנו את המוצר — לפני שמציפים ערך</div>
-      <div class="understand-grid">
-        <div class="understand-item"><div class="k">מוצר / שירות</div><div class="v" id="out-name"></div></div>
-        <div class="understand-item"><div class="k">קטגוריה</div><div class="v" id="out-cat"></div></div>
-        <div class="understand-item"><div class="k">שווי נוכחי (נקודת הפתיחה)</div><div class="v money" id="out-value"></div></div>
-        <div class="understand-item"><div class="k">מטרת הקמפיין</div><div class="v" id="out-goal"></div></div>
-      </div>
+  <!-- GAME -->
+  <section class="card hidden" id="game-view">
+    <div id="feed"></div>
+    <div class="game-actions">
+      <button class="btn btn-gold" id="next-btn">▶ הצעד הבא בסחר</button>
+      <button class="btn btn-outline hidden" id="reroll-step-btn">🎲 ניסוח אחר לצעד הזה</button>
     </div>
-
-    <div class="hook-box">
-      <div class="hook-label">ה-Hook הנרטיבי</div>
-      <div class="hook-text" id="out-hook"></div>
-    </div>
-
-    <div class="card">
-      <div class="section-title"><span class="n">①</span> סולם החליפין העולה</div>
-      <ol class="ladder" id="out-ladder"></ol>
-    </div>
-
-    <div class="card">
-      <div class="section-title"><span class="n">②</span> תוכנית "בנייה בפומבי"</div>
-      <ul class="plain" id="out-plan"></ul>
-    </div>
-
-    <div class="card">
-      <div class="section-title"><span class="n">③</span> 5 דירקטיבות הזהב</div>
-      <div id="out-directives"></div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn btn-gold" id="reroll-btn">🎲 הפתעה חדשה על אותו מוצר</button>
-      <button class="btn btn-outline" id="copy-btn">📋 העתק תוכנית כטקסט</button>
-      <button class="btn btn-outline" id="restart-btn">↩ התחל ממוצר אחר</button>
+    <div class="btn-row hidden" id="finale-actions">
+      <button class="btn btn-outline" id="copy-story-btn">📋 העתיקו את כל הסיפור</button>
+      <button class="btn btn-outline" id="restart-btn">↩ סחר חדש</button>
     </div>
   </section>
 
 </main>
 
 <footer>בהשראת אסטרטגיית "המהדק האדום" של קייל מקדונלד · סקיל "להציף ערך"</footer>
-<div class="toast hidden" id="toast">התוכנית הועתקה ✓</div>
+<div class="toast hidden" id="toast">הועתק ✓</div>
 
 <script>
 (function () {
   'use strict';
 
-  const CATEGORY = {
-    physical: { label: 'מוצר פיזי', partner: 'קמעונאי או יצרן משלים', community: 'קהילת המשתמשים הקבועים' },
-    service:  { label: 'שירות',      partner: 'עסק משלים בתחום',        community: 'קהילת הלקוחות והעמיתים המקצועיים' },
-    saas:     { label: 'מוצר דיגיטלי', partner: 'פלטפורמה או אינטגרציה משלימה', community: 'קהילת המשתמשים בדיסקורד/סלאק' },
-    creative: { label: 'תוכן ויצירה', partner: 'יוצר או אמן משיק',       community: 'קהילת היוצרים והמעריצים' },
-    local:    { label: 'עסק מקומי',  partner: 'עסק שכונתי משלים',        community: 'תושבי האזור' }
+  const DREAMS = [
+    'פרארי אדומה בוהקת',
+    'בית קטן על החוף',
+    'חוזה הקלטה באולפן מקצועי',
+    'תפקיד קטן בסרט',
+    'סיבוב הופעות באירופה',
+    'סוויטה בבניין הכי יוקרתי בעיר'
+  ];
+
+  const TRADE1 = [
+    'מישהו מציע לך שדרוג נחמד: גרסה נדירה יותר, או פריט תואם שמשלים את מה שכבר יש לך.',
+    'אספן/ית אחר/ת מציע/ה חילופין בפריט שכולם בקבוצה מדברים עליו לאחרונה.',
+    'מישהו קופץ עם הצעה שמפתיעה אותך — פריט ששווה קצת יותר ממה שציפית.'
+  ];
+  const TRADE2 = [
+    'ההצעות מתחילות להתחרות זו בזו, וזוכה הצעה שמכניסה אותך לליגה אחרת לגמרי.',
+    'מישהו עם רשת קשרים רחבה שם עין על הפוסט, ומציע חילופין שמזיז את הסיפור קדימה בגדול.',
+    'עמוד או קבוצה גדולים משתפים את הפוסט שלך, וההצעות מגיעות ממקומות שלא דמיינת.'
+  ];
+  const PIVOT = [
+    'הצעה שנראתה מובטחת נופלת ברגע האחרון — אתם מפרסמים את זה בכנות, וזה דווקא מייצר עוד יותר עניין.',
+    'מישהו מנסה "לרמות" בהצעה נמוכה מדי — אתם מסרבים בנימוס בפומבי, וזה מזניק את האמינות שלכם.',
+    'תקלה בלתי צפויה בעסקה הופכת, תוך יום, לפוסט הכי ויראלי שלכם עד כה.'
+  ];
+  const EXPERIENCE = [
+    'מישהו לא מציע חפץ, אלא חוויה — מפגש, סיור, או הזמנה למקום שאי אפשר לקנות אליו כרטיס.',
+    'אתם מקבלים גישה לאירוע סגור, ומתעדים את זה בשידור חי לכל מי שעוקב אחרי הסיפור.',
+    'ההצעה הזו היא הראשונה שהיא לא "חפץ תמורת חפץ" — היא רגע שלא נשכח.'
+  ];
+  const NETWORK = [
+    'מישהו עם קשרים בתחום שרלוונטי לחלום שלכם רואה את הסיפור, ומציע לפתוח דלת.',
+    'עיתונאי/ת או בלוגר/ית תופס/ת את הסיפור ומפרסם/ת עליו — פתאום כולם מכירים את הסיפור שלכם.',
+    'הפוסט שלכם מגיע בדיוק לאדם שמכיר את מי שיכול לקרב אתכם לחלום.'
+  ];
+
+  const STEP_META = {
+    2: { icon: '🔁', label: 'חילופין #1', pool: TRADE1 },
+    3: { icon: '🔁', label: 'חילופין #2', pool: TRADE2 },
+    4: { icon: '⚠️', label: 'תפנית',       pool: PIVOT },
+    5: { icon: '✨', label: 'חוויה',        pool: EXPERIENCE },
+    6: { icon: '🌐', label: 'דלת נפתחת',   pool: NETWORK }
   };
 
-  const GOAL = {
-    sale:      { label: 'מכירה' },
-    leads:     { label: 'גיוס לקוחות' },
-    brand:     { label: 'מיתוג' },
-    investors: { label: 'גיוס משקיעים' }
-  };
-
-  // ברירת מחדל לשווי (במונחי ₪) כשהמשתמש לא ציין מספר — משמשת רק כהערכה גסה
-  const DEFAULT_VALUE = { physical: 150, service: 450, saas: 99, creative: 300, local: 120 };
-
-  // מכפילי שווי ביחס לנקודת הפתיחה (שלב 1 = פי 1, פי עצמה). שלב המשבר מכוון
-  // לרדת ביחס לשלב שלפניו, כדי לשקף נסיגה זמנית לפני הקפיצה הבאה.
-  const VALUE_FACTORS = [1, 2.5, 6, 4, 15, 55, 220, 1000];
-
-  const STEP1 = [
-    '“{product}” בגרסה משודרגת, בשיתוף עם {partner}',
-    'באנדל בלעדי של {product} עם {partner}, במהדורה מוגבלת',
-    'שדרוג של {product} שנבנה יחד עם {partner}'
-  ];
-
-  const STEP2 = [
-    'הזמנה של {product} בהיקף גדול פי כמה מהעסקה הראשונה',
-    'שיתוף פעולה רשמי ומתוקשר סביב {product} עם {partner}',
-    'זכיינות או הפצה אזורית של {product}'
-  ];
-
-  const CRISIS = [
-    'תקלה/עיכוב בלתי צפוי סביב {product} → הומר תוך 48 שעות להטבה בלעדית ל{community}',
-    'ביקורת חדה על {product} שהתקבלה בשקיפות מלאה והפכה לשיפור פומבי',
-    'שינוי תוכנית ברגע האחרון סביב {product} שהוצג כ"מהלך אמיץ" ולא ככישלון'
-  ];
-
-  const STEP3 = [
-    'מפגש/סדנה VIP בלעדית סביב {product} עם {community}, שאי אפשר לקנות בכסף',
-    'חוויה מודרכת אחד-על-אחד סביב {product} שמתועדת בזמן אמת',
-    'אירוע פתוח סביב {product} שהופך לקטע השיחה של השבוע ב{community}'
-  ];
-
-  const STEP4 = [
-    'גישה לרשת הקשרים של דמות מוכרת בתחום ה{catLabel}, בזכות מה ש-{product} כבר הוכיח',
-    'שיתוף פעולה עם משפיען/ית מוביל/ה סביב {product}',
-    'הצטרפות למועדון/פורום סגור של השחקנים הגדולים בתחום ה{catLabel}'
-  ];
-
-  const STEP5 = [
-    'ראיון או כתבה על {product} בכלי תקשורת מקצועי מוביל',
-    'הופעה על {product} בפודקאסט משמעותי בתחום',
-    'הזמנה לדבר על {product} בפני קהל רחב יותר ממה שדמיינתם בהתחלה'
-  ];
-
-  const FINAL = {
-    sale:      ['חוזה רכש שנתי של {product} מלקוח עוגן', 'עסקת הפצה ארצית ל-{product}', 'הזמנה חוזרת בהיקף פי 20 מהעסקה הראשונה'],
-    leads:     ['רשימת המתנה של אלפי לידים איכותיים ל-{product}', 'שותפות עם מותג-על שמזרים קהל שלם אל {product}', 'קמפיין שיתוף שמכפיל את מאגר הלקוחות של {product}'],
-    brand:     ['כתבת שער על {product} בתקשורת המובילה בתחום', 'הזמנה לדבר על {product} על הבמה הגדולה בכנס המרכזי', '{product} הופך שם דבר מוכר בשוק'],
-    investors: ['פגישת המשך על {product} עם קרן הון סיכון מובילה', 'term sheet ראשוני על סבב גיוס עבור {product}', 'הזמנה ל-{product} להצטרף לתוכנית האצה של שם מוביל']
-  };
-
-  const PLAN_TEMPLATES = [
-    'תיעוד יומי קצר (סטורי/פוסט) על הצעד הנוכחי בסולם — לא תוצאה סופית, אלא התהליך.',
-    'סיכום שבועי מפורט (בלוג/ניוזלטר) שכולל גם מה לא עבד, לא רק הצלחות.',
-    'שיתוף פומבי של כל עיכוב או כישלון תוך 24 שעות, עם הסבר על הצעד הבא.',
-    'ערוץ קהילה חי (וואטסאפ/דיסקורד/תגובות) לעדכונים ותחושת שותפות בזמן אמת.',
-    'פנייה לעיתונאי/בלוגר ניש רק כשמגיעים לשלב 3–4 בסולם — לא לפני שיש נרטיב.',
-    'מדידת מומנטום: אם שבוע עובר בלי צעד חדש בסולם — לחזור לעוגן ולפשט.'
-  ];
-
-  const DIRECTIVES = [
-    { title: 'Start with a Low-Friction Anchor', desc: 'התחילו בנקודת מוצא פשוטה ונגישה לכולם.' },
-    { title: 'Engineer Narrative Tension', desc: 'פער שאפתני בין המצוי לרצוי — הוא מנוע הצמיחה.' },
-    { title: 'Radical Transparency / Build in Public', desc: 'תיעדו הכל, כולל כישלונות. שקיפות היא מטבע האמון.' },
-    { title: 'Asymmetric Value Exchange', desc: 'חתרו למעבר מנכסים פיזיים לנכסים מופשטים וחווייתיים.' },
-    { title: 'Local Impact, Global Reach', desc: 'כלים דיגיטליים להגעה גלובלית, מפגשים פיזיים לשגרירי מותג אמיתיים.' }
-  ];
+  const DUP_TIP = 'טיפ: אם יש לכם יותר מעותק אחד מאותו פריט — פרסמו את הכפולים בנפרד ותנו לכמה מציעים להתחרות עליהם. התחרות בין המציעים היא זו שמעלה את המחיר האמיתי, לא אתם.';
 
   function mulberry32(seed) {
     return function () {
@@ -446,138 +289,32 @@
     return h >>> 0;
   }
   function pick(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }
-  function fill(tpl, vars) {
-    return tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k] || '');
+
+  let item = '';
+  let dream = '';
+  let variants = [0, 0, 0, 0, 0, 0, 0, 0];
+  let rungs = [];
+  let currentIndex = -1;
+
+  function actionText(it) {
+    return `פרסמו את "${it}" — ובמיוחד כל כפול או עותק נוסף שיש לכם ממנו — בפייסבוק או בקבוצה רלוונטית, ותנו לקהל להציע חילופין. אל תקבעו מחיר בעצמכם: תנו למציעים להתחרות ביניהם.`;
   }
 
-  function roundNice(n) {
-    if (n < 100) return Math.round(n / 5) * 5;
-    if (n < 1000) return Math.round(n / 10) * 10;
-    if (n < 10000) return Math.round(n / 100) * 100;
-    if (n < 100000) return Math.round(n / 1000) * 1000;
-    return Math.round(n / 10000) * 10000;
-  }
-  function fmtMoney(amount, currency) {
-    return currency + roundNice(amount).toLocaleString('he-IL');
+  function buildRung(idx, variant) {
+    if (idx === 0) return { icon: '🎒', label: 'מה יש לך', text: item };
+    if (idx === 1) return { icon: '📣', label: 'הצעד הפומבי', text: actionText(item) };
+    if (idx === 7) return { icon: '🏁', label: 'החלום', text: `ואז, יום בהיר אחד, מישהו מציע את זה: ${dream} — תמורת מה שכבר הגעתם אליו.` };
+    const meta = STEP_META[idx];
+    const rng = mulberry32(hashStr(item + '|' + dream + '|' + idx + '|' + variant));
+    return { icon: meta.icon, label: meta.label, text: pick(rng, meta.pool) };
   }
 
-  let nonce = 0;
-
-  function generate() {
-    const name = document.getElementById('prod-name').value.trim() || 'המוצר שלך';
-    const desc = document.getElementById('prod-desc').value.trim();
-    const catKey = document.getElementById('prod-cat').value;
-    const goalKey = document.getElementById('prod-goal').value;
-    const currency = document.getElementById('prod-currency').value;
-    const cat = CATEGORY[catKey];
-    const goal = GOAL[goalKey];
-
-    const rawValue = parseFloat((document.getElementById('prod-value').value || '').replace(/[^\d.]/g, ''));
-    const isEstimated = !(rawValue > 0);
-    const baseValue = isEstimated ? DEFAULT_VALUE[catKey] : rawValue;
-
-    const seed = hashStr(name + '|' + desc + '|' + catKey + '|' + goalKey + '|' + baseValue + '|' + nonce);
-    const rng = mulberry32(seed);
-    const vars = { partner: cat.partner, community: cat.community, catLabel: cat.label, product: name };
-
-    const rungs = [
-      { type: 'נקודת פתיחה', cls: '', asset: `${name} כפי שהוא היום${desc ? ' — ' + desc : ''}` },
-      { type: 'פיזי משודרג', cls: '', asset: fill(pick(rng, STEP1), vars) },
-      { type: 'פיזי משמעותי', cls: '', asset: fill(pick(rng, STEP2), vars) },
-      { type: 'ניהול משבר (Pivot)', cls: 'crisis', asset: fill(pick(rng, CRISIS), vars) },
-      { type: 'חוויתי', cls: '', asset: fill(pick(rng, STEP3), vars) },
-      { type: 'גישה / רשת', cls: '', asset: fill(pick(rng, STEP4), vars) },
-      { type: 'הזדמנות חשיפה', cls: '', asset: fill(pick(rng, STEP5), vars) },
-      { type: 'היעד הסופי', cls: 'final', asset: fill(pick(rng, FINAL[goalKey]), vars) }
-    ];
-
-    rungs.forEach((r, i) => {
-      const jitter = i === 0 ? 1 : 0.8 + rng() * 0.45;
-      r.value = baseValue * VALUE_FACTORS[i] * jitter;
-      r.multiplier = Math.max(1, Math.round(r.value / baseValue));
-    });
-
-    const hookTemplates = [
-      `מ-${fmtMoney(rungs[0].value, currency)} ל-${fmtMoney(rungs[7].value, currency)} — זו הדרך שבה ${name} עומד/ת להציף פי ${rungs[7].multiplier} יותר ערך ממה שהוא שווה היום.`,
-      `אף אחד לא מאמין שאפשר להגיע מ-${fmtMoney(rungs[0].value, currency)} ל-${fmtMoney(rungs[7].value, currency)} — עד שרואים את ${name} עושה את זה בשידור חי.`,
-      `${name}: מ-${fmtMoney(rungs[0].value, currency)} היום, ל-${rungs[7].asset} ששווה ${fmtMoney(rungs[7].value, currency)}.`
-    ];
-
-    const planLines = [];
-    const planPool = PLAN_TEMPLATES.slice();
-    for (let i = 0; i < 4; i++) {
-      const idx = Math.floor(rng() * planPool.length);
-      planLines.push(planPool.splice(idx, 1)[0]);
-    }
-
-    renderResult({ name, desc, cat, goal, currency, baseValue, isEstimated, rungs, hook: pick(rng, hookTemplates), planLines });
-  }
-
-  function renderResult(data) {
-    document.getElementById('out-name').textContent = data.name;
-    document.getElementById('out-cat').textContent = data.cat.label;
-    document.getElementById('out-goal').textContent = data.goal.label;
-    document.getElementById('out-value').innerHTML =
-      fmtMoney(data.baseValue, data.currency) +
-      (data.isEstimated ? ` <span class="estimate-flag">(הערכה לפי קטגוריה — עדכנו למספר מדויק)</span>` : '');
-
-    document.getElementById('out-hook').textContent = data.hook;
-
-    const ladderEl = document.getElementById('out-ladder');
-    ladderEl.innerHTML = '';
-    data.rungs.forEach((r, i) => {
-      const li = document.createElement('li');
-      if (r.cls) li.classList.add(r.cls);
-      const valueLine = i === 0
-        ? `≈ ${fmtMoney(r.value, data.currency)} <span class="mult">(נקודת הייחוס)</span>`
-        : `≈ ${fmtMoney(r.value, data.currency)} <span class="mult">(פי ${r.multiplier} מנקודת הפתיחה)</span>`;
-      li.innerHTML = `<div class="rung-top"><span class="rung-index">שלב ${i + 1}</span><span class="rung-type">${r.type}</span></div><div class="rung-asset">${r.asset}</div><div class="rung-value">${valueLine}</div>`;
-      ladderEl.appendChild(li);
-    });
-
-    const planEl = document.getElementById('out-plan');
-    planEl.innerHTML = '';
-    data.planLines.forEach(line => {
-      const li = document.createElement('li');
-      li.textContent = line;
-      planEl.appendChild(li);
-    });
-
-    const dirEl = document.getElementById('out-directives');
-    dirEl.innerHTML = '';
-    DIRECTIVES.forEach((d, i) => {
-      const div = document.createElement('div');
-      div.className = 'directive';
-      div.innerHTML = `<span class="mark">${i + 1}.</span><div><b>${d.title}</b><span class="sub">${d.desc}</span></div>`;
-      dirEl.appendChild(div);
-    });
-
-    document.getElementById('form-view').classList.add('hidden');
-    document.getElementById('result-view').classList.remove('hidden');
-    document.getElementById('step-bar-1').classList.remove('active');
-    document.getElementById('step-bar-1').classList.add('done');
-    document.getElementById('step-bar-2').classList.add('active');
-
-    window._lastPlan = data;
-  }
-
-  function planAsText(data) {
-    const lines = [];
-    lines.push(`להציף ערך — אסטרטגיית "המהדק האדום" עבור: ${data.name}`);
-    lines.push('');
-    lines.push(`הבנו את המוצר: ${data.name} (${data.cat.label}), שווי נוכחי ${fmtMoney(data.baseValue, data.currency)}${data.isEstimated ? ' [הערכה]' : ''}, מטרה: ${data.goal.label}.`);
-    lines.push('');
-    lines.push(`Hook: ${data.hook}`);
-    lines.push('');
-    lines.push('סולם החליפין העולה:');
-    data.rungs.forEach((r, i) => lines.push(`  ${i + 1}. [${r.type}] ${r.asset} — ≈ ${fmtMoney(r.value, data.currency)}${i > 0 ? ' (פי ' + r.multiplier + ')' : ''}`));
-    lines.push('');
-    lines.push('תוכנית בנייה בפומבי:');
-    data.planLines.forEach(l => lines.push('  - ' + l));
-    lines.push('');
-    lines.push('5 דירקטיבות הזהב:');
-    DIRECTIVES.forEach((d, i) => lines.push(`  ${i + 1}. ${d.title} — ${d.desc}`));
-    return lines.join('\n');
+  function postForRung(idx) {
+    const r = rungs[idx];
+    if (idx === 1) return r.text;
+    if (idx === 7) return `🏁 השגתי את זה: ${dream}!\nהתחלתי מ: ${item}.\nתודה לכל מי שהיה חלק מהמסע 🙏📎`;
+    const have = idx === 2 ? item : rungs[idx - 1].text;
+    return `📎 עדכון בפרויקט הסחר שלי:\nיש לי כרגע: ${have}\nמוכן/ה לשדרג ל: ${r.text}\nמי מציע? תגובות פתוחות 👇`;
   }
 
   function showToast(msg) {
@@ -588,25 +325,131 @@
     t._timer = setTimeout(() => t.classList.add('hidden'), 2200);
   }
 
-  document.getElementById('generate-btn').addEventListener('click', () => { nonce = 0; generate(); });
-  document.getElementById('reroll-btn').addEventListener('click', () => { nonce++; generate(); });
-  document.getElementById('restart-btn').addEventListener('click', () => {
-    document.getElementById('prod-name').value = '';
-    document.getElementById('prod-desc').value = '';
-    document.getElementById('prod-cat').selectedIndex = 0;
-    document.getElementById('prod-goal').selectedIndex = 0;
-    document.getElementById('prod-value').value = '';
-    document.getElementById('prod-currency').selectedIndex = 0;
-    document.getElementById('result-view').classList.add('hidden');
-    document.getElementById('form-view').classList.remove('hidden');
-    document.getElementById('step-bar-1').classList.add('active');
-    document.getElementById('step-bar-1').classList.remove('done');
-    document.getElementById('step-bar-2').classList.remove('active');
+  function spawnConfetti(container) {
+    const emojis = ['🎉', '📎', '✨', '🏁'];
+    for (let i = 0; i < 10; i++) {
+      const span = document.createElement('span');
+      span.className = 'confetti';
+      span.textContent = emojis[i % emojis.length];
+      span.style.left = (5 + Math.random() * 90) + '%';
+      span.style.animationDelay = (Math.random() * 0.4) + 's';
+      container.appendChild(span);
+    }
+    setTimeout(() => { container.innerHTML = ''; }, 3000);
+  }
+
+  function renderCard(idx, flash) {
+    const r = rungs[idx];
+    let el = document.getElementById('card-' + idx);
+    const isFinal = idx === 7;
+    const isNew = !el;
+    if (isNew) {
+      el = document.createElement('div');
+      el.id = 'card-' + idx;
+      el.className = 'step-card' + (isFinal ? ' final' : '');
+      document.getElementById('feed').appendChild(el);
+    }
+    if (flash) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+
+    const showTip = idx === 1;
+    const canCopy = idx >= 1;
+
+    el.innerHTML = `
+      <div class="step-top"><span class="step-icon">${r.icon}</span><span class="step-label">${r.label}</span></div>
+      <div class="step-text">${r.text}</div>
+      ${showTip ? `<div class="step-tip">${DUP_TIP}</div>` : ''}
+      ${isFinal ? `<div class="finale-banner">🏆 הגעתם מ"${item}" ל${dream}!</div><div class="confetti-wrap" id="confetti-wrap"></div>` : ''}
+      ${canCopy ? `<button class="step-copy" data-copy-idx="${idx}">📋 פוסט מוכן לפייסבוק</button>` : ''}
+    `;
+
+    if (isFinal) {
+      const wrap = document.getElementById('confetti-wrap');
+      if (wrap) spawnConfetti(wrap);
+    }
+
+    const copyBtn = el.querySelector('[data-copy-idx]');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const text = postForRung(idx);
+        navigator.clipboard.writeText(text).then(() => showToast('הפוסט הועתק ✓')).catch(() => showToast('לא ניתן להעתיק אוטומטית'));
+      });
+    }
+  }
+
+  function updateActionsUI() {
+    const nextBtn = document.getElementById('next-btn');
+    const rerollBtn = document.getElementById('reroll-step-btn');
+    const finaleActions = document.getElementById('finale-actions');
+
+    if (currentIndex >= 7) {
+      nextBtn.classList.add('hidden');
+      rerollBtn.classList.add('hidden');
+      finaleActions.classList.remove('hidden');
+    } else {
+      nextBtn.classList.remove('hidden');
+      nextBtn.textContent = currentIndex < 0 ? '▶ הצעד הראשון' : '▶ הצעד הבא בסחר';
+      finaleActions.classList.add('hidden');
+      if (currentIndex >= 2 && currentIndex <= 6) {
+        rerollBtn.classList.remove('hidden');
+      } else {
+        rerollBtn.classList.add('hidden');
+      }
+    }
+  }
+
+  function revealNext() {
+    if (currentIndex >= 7) return;
+    currentIndex++;
+    rungs[currentIndex] = buildRung(currentIndex, variants[currentIndex]);
+    renderCard(currentIndex, false);
+    updateActionsUI();
+    document.getElementById('card-' + currentIndex).scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }
+
+  function rerollCurrent() {
+    if (currentIndex < 2 || currentIndex > 6) return;
+    variants[currentIndex]++;
+    rungs[currentIndex] = buildRung(currentIndex, variants[currentIndex]);
+    renderCard(currentIndex, true);
+  }
+
+  function fullStoryText() {
+    const lines = [`להציף ערך — הסיפור שלי, מ"${item}" ל${dream}`, ''];
+    rungs.forEach((r, i) => { if (r) lines.push(`${r.icon} ${r.label}: ${r.text}`); });
+    return lines.join('\n');
+  }
+
+  document.getElementById('start-btn').addEventListener('click', () => {
+    const itemVal = document.getElementById('start-item').value.trim();
+    if (!itemVal) { document.getElementById('start-item').focus(); return; }
+    item = itemVal;
+    const dreamVal = document.getElementById('dream-goal').value.trim();
+    const rng = mulberry32(hashStr(item + '|seed'));
+    dream = dreamVal || pick(rng, DREAMS);
+
+    variants = [0, 0, 0, 0, 0, 0, 0, 0];
+    rungs = [];
+    currentIndex = -1;
+    document.getElementById('feed').innerHTML = '';
+
+    document.getElementById('intro-view').classList.add('hidden');
+    document.getElementById('game-view').classList.remove('hidden');
+    updateActionsUI();
+    revealNext();
   });
-  document.getElementById('copy-btn').addEventListener('click', () => {
-    if (!window._lastPlan) return;
-    const text = planAsText(window._lastPlan);
-    navigator.clipboard.writeText(text).then(() => showToast('התוכנית הועתקה ✓')).catch(() => showToast('לא ניתן להעתיק אוטומטית'));
+
+  document.getElementById('next-btn').addEventListener('click', revealNext);
+  document.getElementById('reroll-step-btn').addEventListener('click', rerollCurrent);
+
+  document.getElementById('copy-story-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(fullStoryText()).then(() => showToast('הסיפור הועתק ✓')).catch(() => showToast('לא ניתן להעתיק אוטומטית'));
+  });
+
+  document.getElementById('restart-btn').addEventListener('click', () => {
+    document.getElementById('start-item').value = '';
+    document.getElementById('dream-goal').value = '';
+    document.getElementById('game-view').classList.add('hidden');
+    document.getElementById('intro-view').classList.remove('hidden');
   });
 })();
 </script>
