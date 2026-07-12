@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>להציף ערך | מחולל אסטרטגיית "המהדק האדום"</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0a0f;
+    --surface: #17131c;
+    --surface2: #1f1826;
+    --red: #e63950;
+    --red-soft: rgba(230,57,80,0.14);
+    --gold: #f2c94c;
+    --gold-soft: rgba(242,201,76,0.14);
+    --text: #f0ecf2;
+    --muted: #948d9c;
+    --border: rgba(255,255,255,0.08);
+    --radius: 16px;
+    --shadow: 0 12px 36px rgba(0,0,0,0.45);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', 'Arial Hebrew', Arial, sans-serif;
+    direction: rtl;
+    min-height: 100vh;
+    line-height: 1.65;
+    background-image:
+      radial-gradient(ellipse at 15% 0%, rgba(230,57,80,0.10) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 15%, rgba(242,201,76,0.08) 0%, transparent 55%);
+    padding-bottom: 60px;
+  }
+
+  header {
+    padding: 48px 20px 20px;
+    text-align: center;
+  }
+  .clip-icon { font-size: 2.2rem; display: inline-block; transform: rotate(-15deg); }
+  header h1 {
+    font-size: clamp(1.7rem, 4.4vw, 2.6rem);
+    font-weight: 900;
+    margin: 10px 0 10px;
+    background: linear-gradient(135deg, var(--red), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header p {
+    color: var(--muted);
+    max-width: 560px;
+    margin: 0 auto;
+    font-size: 1rem;
+  }
+
+  .steps-bar {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    max-width: 480px;
+    margin: 28px auto 0;
+  }
+  .step {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+    transition: all 0.3s;
+  }
+  .step-num { display: block; font-size: 1rem; font-weight: 700; margin-bottom: 2px; }
+  .step.active { color: var(--gold); border-color: var(--gold); }
+  .step.done { color: var(--red); border-color: var(--red); }
+
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 20px 0;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 26px 24px;
+    margin-bottom: 20px;
+  }
+
+  label { display: block; font-size: 0.88rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .field { margin-bottom: 18px; }
+  input[type="text"], textarea, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 12px 14px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  textarea { resize: vertical; min-height: 70px; }
+  input[type="text"]:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
+
+  .btn {
+    border: none;
+    border-radius: 12px;
+    padding: 13px 22px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--red), #c22943); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.12); transform: translateY(-1px); }
+  .btn-gold { background: linear-gradient(135deg, var(--gold), #d9a91f); color: #241b02; }
+  .btn-gold:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+  .btn-outline:hover { color: var(--text); border-color: var(--muted); }
+  .btn-row { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+  .btn-row .btn { flex: 1; min-width: 140px; }
+
+  .hidden { display: none !important; }
+
+  /* Result view */
+  .hook-box {
+    background: linear-gradient(135deg, var(--red-soft), var(--gold-soft));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 22px;
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  .hook-label { font-size: 0.75rem; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  .hook-text { font-size: 1.25rem; font-weight: 700; line-height: 1.5; }
+
+  .section-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title .n { color: var(--gold); }
+
+  /* Ladder */
+  .ladder { position: relative; padding-inline-start: 0; list-style: none; margin-bottom: 6px; }
+  .ladder li {
+    position: relative;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px 14px 16px;
+    margin-bottom: 10px;
+  }
+  .ladder li.crisis { border-color: rgba(230,57,80,0.5); background: rgba(230,57,80,0.08); }
+  .ladder li.final { border-color: rgba(242,201,76,0.6); background: rgba(242,201,76,0.08); }
+  .rung-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .rung-index { font-weight: 900; color: var(--gold); font-size: 0.9rem; }
+  .rung-type { font-size: 0.72rem; color: var(--muted); background: rgba(255,255,255,0.05); padding: 2px 9px; border-radius: 20px; white-space: nowrap; }
+  .rung-asset { font-size: 0.98rem; font-weight: 600; }
+
+  ul.plain { list-style: none; }
+  ul.plain li {
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    font-size: 0.92rem;
+  }
+
+  .directive {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+  }
+  .directive .mark { color: var(--gold); font-weight: 900; flex-shrink: 0; }
+  .directive b { display: block; margin-bottom: 2px; }
+  .directive span.sub { color: var(--muted); }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--gold);
+    color: #241b02;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    box-shadow: var(--shadow);
+    z-index: 200;
+    transition: opacity 0.3s;
+  }
+  .toast.hidden { display: none; }
+
+  footer { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 30px; padding: 0 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="clip-icon">📎</span>
+  <h1>להציף ערך</h1>
+  <p>מחולל אסטרטגיית "המהדק האדום": הזינו את המוצר או השירות שלכם, וקבלו סולם
+    חליפין עולה, הוק ויראלי, ותוכנית "בנייה בפומבי" — כדי לקבל הרבה יותר על
+    מה שיש לכם.</p>
+
+  <div class="steps-bar">
+    <div class="step active" id="step-bar-1"><span class="step-num">1</span>פרטי המוצר</div>
+    <div class="step" id="step-bar-2"><span class="step-num">2</span>אסטרטגיית ערך</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- STEP 1: FORM -->
+  <section class="card" id="form-view">
+    <div class="field">
+      <label for="prod-name">שם המוצר / השירות / המותג</label>
+      <input type="text" id="prod-name" placeholder='למשל: "סטודיו לעיצוב פנים", "אפליקציית ניהול תזרים"' />
+    </div>
+    <div class="field">
+      <label for="prod-desc">תיאור קצר (משפט–שניים)</label>
+      <textarea id="prod-desc" placeholder="במה זה עוזר ולמי?"></textarea>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="prod-cat">קטגוריה</label>
+        <select id="prod-cat">
+          <option value="physical">מוצר פיזי</option>
+          <option value="service">שירות</option>
+          <option value="saas">דיגיטלי / SaaS</option>
+          <option value="creative">תוכן ויצירה</option>
+          <option value="local">עסק מקומי</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="prod-goal">מטרת הקמפיין</label>
+        <select id="prod-goal">
+          <option value="sale">מכירה</option>
+          <option value="leads">גיוס לקוחות</option>
+          <option value="brand">מיתוג</option>
+          <option value="investors">גיוס משקיעים</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="generate-btn">📎 הפכו את זה לבית ← לייצר אסטרטגיה</button>
+  </section>
+
+  <!-- STEP 2: RESULT -->
+  <section id="result-view" class="hidden">
+
+    <div class="hook-box">
+      <div class="hook-label">ה-Hook הנרטיבי</div>
+      <div class="hook-text" id="out-hook"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><span class="n">①</span> סולם החליפין העולה</div>
+      <ol class="ladder" id="out-ladder"></ol>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><span class="n">②</span> תוכנית "בנייה בפומבי"</div>
+      <ul class="plain" id="out-plan"></ul>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><span class="n">③</span> 5 דירקטיבות הזהב</div>
+      <div id="out-directives"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-gold" id="reroll-btn">🎲 הפתעה חדשה על אותו מוצר</button>
+      <button class="btn btn-outline" id="copy-btn">📋 העתק תוכנית כטקסט</button>
+      <button class="btn btn-outline" id="restart-btn">↩ התחל ממוצר אחר</button>
+    </div>
+  </section>
+
+</main>
+
+<footer>בהשראת אסטרטגיית "המהדק האדום" של קייל מקדונלד · סקיל "להציף ערך"</footer>
+<div class="toast hidden" id="toast">התוכנית הועתקה ✓</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const CATEGORY = {
+    physical: { label: 'מוצר פיזי', partner: 'קמעונאי או יצרן משלים', community: 'קהילת המשתמשים הקבועים' },
+    service:  { label: 'שירות',      partner: 'עסק משלים בתחום',        community: 'קהילת הלקוחות והעמיתים המקצועיים' },
+    saas:     { label: 'מוצר דיגיטלי', partner: 'פלטפורמה או אינטגרציה משלימה', community: 'קהילת המשתמשים בדיסקורד/סלאק' },
+    creative: { label: 'תוכן ויצירה', partner: 'יוצר או אמן משיק',       community: 'קהילת היוצרים והמעריצים' },
+    local:    { label: 'עסק מקומי',  partner: 'עסק שכונתי משלים',        community: 'תושבי האזור' }
+  };
+
+  const GOAL = {
+    sale:      { label: 'מכירה' },
+    leads:     { label: 'גיוס לקוחות' },
+    brand:     { label: 'מיתוג' },
+    investors: { label: 'גיוס משקיעים' }
+  };
+
+  const ANCHORS = [
+    'טעימה/דגימה חינמית ל-10 הנרשמים הראשונים',
+    'סרטון קצר ברשת החברתית שמתעד את נקודת ההתחלה',
+    'הצעת התנסות סמלית בעלות אפסית',
+    'גרסת מיני של המוצר/השירות, בחינם, תמורת שיתוף פומבי'
+  ];
+
+  const STEP1 = [
+    'שדרוג בשיתוף עם {partner}',
+    'באנדל מיוחד עם {partner} במהדורה מוגבלת',
+    'גרסה משודרגת שנבנתה יחד עם {partner}'
+  ];
+
+  const STEP2 = [
+    'הזמנה בהיקף גדול פי כמה מהמקור',
+    'שיתוף פעולה רשמי ומתוקשר עם {partner}',
+    'זכיינות/הפצה אזורית של הרעיון'
+  ];
+
+  const CRISIS = [
+    'תקלה/עיכוב בלתי צפוי → הומר תוך 48 שעות להטבה בלעדית ל{community}',
+    'ביקורת חדה שהתקבלה בשקיפות מלאה והפכה לשיפור פומבי של המוצר',
+    'שינוי תוכנית ברגע האחרון שהוצג כ"מהלך אמיץ" ולא ככישלון'
+  ];
+
+  const STEP3 = [
+    'מפגש/סדנה VIP בלעדית עם {community} שאי אפשר לקנות בכסף',
+    'חוויה מודרכת אחד-על-אחד שמתועדת בזמן אמת',
+    'אירוע פתוח לקהילה שהופך לקטע השיחה של השבוע'
+  ];
+
+  const STEP4 = [
+    'גישה לרשת הקשרים של דמות מוכרת בתחום ה{catLabel}',
+    'שיתוף פעולה עם משפיען/ית מוביל/ה בתחום',
+    'הצטרפות למועדון/פורום סגור של השחקנים הגדולים בשוק'
+  ];
+
+  const STEP5 = [
+    'ראיון או כתבה בכלי תקשורת מקצועי מוביל',
+    'הופעה בפודקאסט משמעותי בתחום',
+    'הזמנה לדבר בפני קהל רחב יותר ממה שדמיינתם בהתחלה'
+  ];
+
+  const FINAL = {
+    sale:      ['חוזה רכש שנתי מלקוח עוגן', 'עסקת הפצה ארצית', 'הזמנה חוזרת בהיקף פי 20 מהעסקה הראשונה'],
+    leads:     ['רשימת המתנה של אלפי לידים איכותיים', 'שותפות עם מותג-על שמזרים קהל שלם', 'קמפיין שיתוף שמכפיל את מאגר הלקוחות'],
+    brand:     ['כתבת שער בתקשורת המובילה בתחום', 'הזמנה לדבר על הבמה הגדולה בכנס המרכזי', 'המוצר הופך שם דבר מוכר בשוק'],
+    investors: ['פגישת המשך עם קרן הון סיכון מובילה', 'term sheet ראשוני על סבב גיוס', 'הזמנה להצטרף לתוכנית אצה של שם מוביל']
+  };
+
+  const PLAN_TEMPLATES = [
+    'תיעוד יומי קצר (סטורי/פוסט) על הצעד הנוכחי בסולם — לא תוצאה סופית, אלא התהליך.',
+    'סיכום שבועי מפורט (בלוג/ניוזלטר) שכולל גם מה לא עבד, לא רק הצלחות.',
+    'שיתוף פומבי של כל עיכוב או כישלון תוך 24 שעות, עם הסבר על הצעד הבא.',
+    'ערוץ קהילה חי (וואטסאפ/דיסקורד/תגובות) לעדכונים ותחושת שותפות בזמן אמת.',
+    'פנייה לעיתונאי/בלוגר ניש רק כשמגיעים לשלב 3–4 בסולם — לא לפני שיש נרטיב.',
+    'מדידת מומנטום: אם שבוע עובר בלי צעד חדש בסולם — לחזור לעוגן ולפשט.'
+  ];
+
+  const DIRECTIVES = [
+    { title: 'Start with a Low-Friction Anchor', desc: 'התחילו בנקודת מוצא פשוטה ונגישה לכולם.' },
+    { title: 'Engineer Narrative Tension', desc: 'פער שאפתני בין המצוי לרצוי — הוא מנוע הצמיחה.' },
+    { title: 'Radical Transparency / Build in Public', desc: 'תיעדו הכל, כולל כישלונות. שקיפות היא מטבע האמון.' },
+    { title: 'Asymmetric Value Exchange', desc: 'חתרו למעבר מנכסים פיזיים לנכסים מופשטים וחווייתיים.' },
+    { title: 'Local Impact, Global Reach', desc: 'כלים דיגיטליים להגעה גלובלית, מפגשים פיזיים לשגרירי מותג אמיתיים.' }
+  ];
+
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function hashStr(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function pick(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }
+  function fill(tpl, vars) {
+    return tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k] || '');
+  }
+
+  let nonce = 0;
+
+  function generate() {
+    const name = document.getElementById('prod-name').value.trim() || 'המוצר שלך';
+    const desc = document.getElementById('prod-desc').value.trim();
+    const catKey = document.getElementById('prod-cat').value;
+    const goalKey = document.getElementById('prod-goal').value;
+    const cat = CATEGORY[catKey];
+    const goal = GOAL[goalKey];
+
+    const seed = hashStr(name + '|' + desc + '|' + catKey + '|' + goalKey + '|' + nonce);
+    const rng = mulberry32(seed);
+    const vars = { partner: cat.partner, community: cat.community, catLabel: cat.label, product: name };
+
+    const rungs = [
+      { type: 'עוגן פתיחה', cls: '', asset: pick(rng, ANCHORS) },
+      { type: 'פיזי משודרג', cls: '', asset: fill(pick(rng, STEP1), vars) },
+      { type: 'פיזי משמעותי', cls: '', asset: fill(pick(rng, STEP2), vars) },
+      { type: 'ניהול משבר (Pivot)', cls: 'crisis', asset: fill(pick(rng, CRISIS), vars) },
+      { type: 'חוויתי', cls: '', asset: fill(pick(rng, STEP3), vars) },
+      { type: 'גישה / רשת', cls: '', asset: fill(pick(rng, STEP4), vars) },
+      { type: 'הזדמנות חשיפה', cls: '', asset: pick(rng, STEP5) },
+      { type: 'היעד הסופי', cls: 'final', asset: pick(rng, FINAL[goalKey]) }
+    ];
+
+    const hookTemplates = [
+      `מ"${rungs[0].asset}" ל"${rungs[7].asset}" — זו הדרך שבה ${name} עומד/ת להוכיח לעולם כמה שווה מה שכבר יש לכם.`,
+      `אף אחד לא מאמין שאפשר להגיע מ-${rungs[0].asset.slice(0, 24)}… ל-${rungs[7].asset} — עד שרואים את זה קורה בשידור חי.`,
+      `${name}: הפרויקט שמתחיל כמעט משום דבר, ומסתיים ב${rungs[7].asset}.`
+    ];
+
+    const planLines = [];
+    const planPool = PLAN_TEMPLATES.slice();
+    for (let i = 0; i < 4; i++) {
+      const idx = Math.floor(rng() * planPool.length);
+      planLines.push(planPool.splice(idx, 1)[0]);
+    }
+
+    renderResult({ name, cat, goal, rungs, hook: pick(rng, hookTemplates), planLines });
+  }
+
+  function renderResult(data) {
+    document.getElementById('out-hook').textContent = data.hook;
+
+    const ladderEl = document.getElementById('out-ladder');
+    ladderEl.innerHTML = '';
+    data.rungs.forEach((r, i) => {
+      const li = document.createElement('li');
+      if (r.cls) li.classList.add(r.cls);
+      li.innerHTML = `<div class="rung-top"><span class="rung-index">שלב ${i + 1}</span><span class="rung-type">${r.type}</span></div><div class="rung-asset">${r.asset}</div>`;
+      ladderEl.appendChild(li);
+    });
+
+    const planEl = document.getElementById('out-plan');
+    planEl.innerHTML = '';
+    data.planLines.forEach(line => {
+      const li = document.createElement('li');
+      li.textContent = line;
+      planEl.appendChild(li);
+    });
+
+    const dirEl = document.getElementById('out-directives');
+    dirEl.innerHTML = '';
+    DIRECTIVES.forEach((d, i) => {
+      const div = document.createElement('div');
+      div.className = 'directive';
+      div.innerHTML = `<span class="mark">${i + 1}.</span><div><b>${d.title}</b><span class="sub">${d.desc}</span></div>`;
+      dirEl.appendChild(div);
+    });
+
+    document.getElementById('form-view').classList.add('hidden');
+    document.getElementById('result-view').classList.remove('hidden');
+    document.getElementById('step-bar-1').classList.remove('active');
+    document.getElementById('step-bar-1').classList.add('done');
+    document.getElementById('step-bar-2').classList.add('active');
+
+    window._lastPlan = data;
+  }
+
+  function planAsText(data) {
+    const lines = [];
+    lines.push(`להציף ערך — אסטרטגיית "המהדק האדום" עבור: ${data.name}`);
+    lines.push('');
+    lines.push(`Hook: ${data.hook}`);
+    lines.push('');
+    lines.push('סולם החליפין העולה:');
+    data.rungs.forEach((r, i) => lines.push(`  ${i + 1}. [${r.type}] ${r.asset}`));
+    lines.push('');
+    lines.push('תוכנית בנייה בפומבי:');
+    data.planLines.forEach(l => lines.push('  - ' + l));
+    lines.push('');
+    lines.push('5 דירקטיבות הזהב:');
+    DIRECTIVES.forEach((d, i) => lines.push(`  ${i + 1}. ${d.title} — ${d.desc}`));
+    return lines.join('\n');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.add('hidden'), 2200);
+  }
+
+  document.getElementById('generate-btn').addEventListener('click', () => { nonce = 0; generate(); });
+  document.getElementById('reroll-btn').addEventListener('click', () => { nonce++; generate(); });
+  document.getElementById('restart-btn').addEventListener('click', () => {
+    document.getElementById('result-view').classList.add('hidden');
+    document.getElementById('form-view').classList.remove('hidden');
+    document.getElementById('step-bar-1').classList.add('active');
+    document.getElementById('step-bar-1').classList.remove('done');
+    document.getElementById('step-bar-2').classList.remove('active');
+  });
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    if (!window._lastPlan) return;
+    const text = planAsText(window._lastPlan);
+    navigator.clipboard.writeText(text).then(() => showToast('התוכנית הועתקה ✓')).catch(() => showToast('לא ניתן להעתיק אוטומטית'));
+  });
+})();
+</script>
+
+</body>
+</html>
