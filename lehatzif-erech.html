@@ -113,6 +113,8 @@
   }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
+  .value-row { display: grid; grid-template-columns: 1fr 90px; gap: 10px; }
+  .hint { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
 
   .btn {
     border: none;
@@ -150,6 +152,19 @@
   }
   .hook-label { font-size: 0.75rem; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
   .hook-text { font-size: 1.25rem; font-weight: 700; line-height: 1.5; }
+
+  /* Understanding echo */
+  .understand-card { border-color: rgba(242,201,76,0.35); }
+  .understand-title { font-size: 0.78rem; letter-spacing: 0.04em; color: var(--gold); text-transform: uppercase; margin-bottom: 10px; font-weight: 800; }
+  .understand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
+  @media (max-width: 520px) { .understand-grid { grid-template-columns: 1fr; } }
+  .understand-item .k { font-size: 0.74rem; color: var(--muted); margin-bottom: 2px; }
+  .understand-item .v { font-size: 0.98rem; font-weight: 600; }
+  .understand-item .v.money { font-variant-numeric: tabular-nums; color: var(--gold); font-size: 1.05rem; }
+  .estimate-flag { font-size: 0.72rem; color: var(--muted); font-weight: 400; }
+
+  .rung-value { font-size: 0.85rem; color: var(--gold); font-variant-numeric: tabular-nums; margin-top: 6px; }
+  .rung-value .mult { color: var(--muted); }
 
   .section-title {
     font-size: 1.05rem;
@@ -271,11 +286,33 @@
         </select>
       </div>
     </div>
-    <button class="btn btn-primary" id="generate-btn">📎 הפכו את זה לבית ← לייצר אסטרטגיה</button>
+    <div class="field">
+      <label for="prod-value">כמה זה שווה היום? (מחיר/שווי נוכחי)</label>
+      <div class="value-row">
+        <input type="text" inputmode="decimal" id="prod-value" placeholder="למשל: 450" />
+        <select id="prod-currency">
+          <option value="₪">₪</option>
+          <option value="$">$</option>
+          <option value="€">€</option>
+        </select>
+      </div>
+      <div class="hint">בלי המספר הזה אי אפשר להציף ערך — אם אין לכם מספר מדויק, נעריך לפי הקטגוריה ונציין שזו הערכה.</div>
+    </div>
+    <button class="btn btn-primary" id="generate-btn">📎 הבינו את המוצר ← ולהציף ערך</button>
   </section>
 
   <!-- STEP 2: RESULT -->
   <section id="result-view" class="hidden">
+
+    <div class="card understand-card">
+      <div class="understand-title">הבנו את המוצר — לפני שמציפים ערך</div>
+      <div class="understand-grid">
+        <div class="understand-item"><div class="k">מוצר / שירות</div><div class="v" id="out-name"></div></div>
+        <div class="understand-item"><div class="k">קטגוריה</div><div class="v" id="out-cat"></div></div>
+        <div class="understand-item"><div class="k">שווי נוכחי (נקודת הפתיחה)</div><div class="v money" id="out-value"></div></div>
+        <div class="understand-item"><div class="k">מטרת הקמפיין</div><div class="v" id="out-goal"></div></div>
+      </div>
+    </div>
 
     <div class="hook-box">
       <div class="hook-label">ה-Hook הנרטיבי</div>
@@ -328,54 +365,54 @@
     investors: { label: 'גיוס משקיעים' }
   };
 
-  const ANCHORS = [
-    'טעימה/דגימה חינמית ל-10 הנרשמים הראשונים',
-    'סרטון קצר ברשת החברתית שמתעד את נקודת ההתחלה',
-    'הצעת התנסות סמלית בעלות אפסית',
-    'גרסת מיני של המוצר/השירות, בחינם, תמורת שיתוף פומבי'
-  ];
+  // ברירת מחדל לשווי (במונחי ₪) כשהמשתמש לא ציין מספר — משמשת רק כהערכה גסה
+  const DEFAULT_VALUE = { physical: 150, service: 450, saas: 99, creative: 300, local: 120 };
+
+  // מכפילי שווי ביחס לנקודת הפתיחה (שלב 1 = פי 1, פי עצמה). שלב המשבר מכוון
+  // לרדת ביחס לשלב שלפניו, כדי לשקף נסיגה זמנית לפני הקפיצה הבאה.
+  const VALUE_FACTORS = [1, 2.5, 6, 4, 15, 55, 220, 1000];
 
   const STEP1 = [
-    'שדרוג בשיתוף עם {partner}',
-    'באנדל מיוחד עם {partner} במהדורה מוגבלת',
-    'גרסה משודרגת שנבנתה יחד עם {partner}'
+    '“{product}” בגרסה משודרגת, בשיתוף עם {partner}',
+    'באנדל בלעדי של {product} עם {partner}, במהדורה מוגבלת',
+    'שדרוג של {product} שנבנה יחד עם {partner}'
   ];
 
   const STEP2 = [
-    'הזמנה בהיקף גדול פי כמה מהמקור',
-    'שיתוף פעולה רשמי ומתוקשר עם {partner}',
-    'זכיינות/הפצה אזורית של הרעיון'
+    'הזמנה של {product} בהיקף גדול פי כמה מהעסקה הראשונה',
+    'שיתוף פעולה רשמי ומתוקשר סביב {product} עם {partner}',
+    'זכיינות או הפצה אזורית של {product}'
   ];
 
   const CRISIS = [
-    'תקלה/עיכוב בלתי צפוי → הומר תוך 48 שעות להטבה בלעדית ל{community}',
-    'ביקורת חדה שהתקבלה בשקיפות מלאה והפכה לשיפור פומבי של המוצר',
-    'שינוי תוכנית ברגע האחרון שהוצג כ"מהלך אמיץ" ולא ככישלון'
+    'תקלה/עיכוב בלתי צפוי סביב {product} → הומר תוך 48 שעות להטבה בלעדית ל{community}',
+    'ביקורת חדה על {product} שהתקבלה בשקיפות מלאה והפכה לשיפור פומבי',
+    'שינוי תוכנית ברגע האחרון סביב {product} שהוצג כ"מהלך אמיץ" ולא ככישלון'
   ];
 
   const STEP3 = [
-    'מפגש/סדנה VIP בלעדית עם {community} שאי אפשר לקנות בכסף',
-    'חוויה מודרכת אחד-על-אחד שמתועדת בזמן אמת',
-    'אירוע פתוח לקהילה שהופך לקטע השיחה של השבוע'
+    'מפגש/סדנה VIP בלעדית סביב {product} עם {community}, שאי אפשר לקנות בכסף',
+    'חוויה מודרכת אחד-על-אחד סביב {product} שמתועדת בזמן אמת',
+    'אירוע פתוח סביב {product} שהופך לקטע השיחה של השבוע ב{community}'
   ];
 
   const STEP4 = [
-    'גישה לרשת הקשרים של דמות מוכרת בתחום ה{catLabel}',
-    'שיתוף פעולה עם משפיען/ית מוביל/ה בתחום',
-    'הצטרפות למועדון/פורום סגור של השחקנים הגדולים בשוק'
+    'גישה לרשת הקשרים של דמות מוכרת בתחום ה{catLabel}, בזכות מה ש-{product} כבר הוכיח',
+    'שיתוף פעולה עם משפיען/ית מוביל/ה סביב {product}',
+    'הצטרפות למועדון/פורום סגור של השחקנים הגדולים בתחום ה{catLabel}'
   ];
 
   const STEP5 = [
-    'ראיון או כתבה בכלי תקשורת מקצועי מוביל',
-    'הופעה בפודקאסט משמעותי בתחום',
-    'הזמנה לדבר בפני קהל רחב יותר ממה שדמיינתם בהתחלה'
+    'ראיון או כתבה על {product} בכלי תקשורת מקצועי מוביל',
+    'הופעה על {product} בפודקאסט משמעותי בתחום',
+    'הזמנה לדבר על {product} בפני קהל רחב יותר ממה שדמיינתם בהתחלה'
   ];
 
   const FINAL = {
-    sale:      ['חוזה רכש שנתי מלקוח עוגן', 'עסקת הפצה ארצית', 'הזמנה חוזרת בהיקף פי 20 מהעסקה הראשונה'],
-    leads:     ['רשימת המתנה של אלפי לידים איכותיים', 'שותפות עם מותג-על שמזרים קהל שלם', 'קמפיין שיתוף שמכפיל את מאגר הלקוחות'],
-    brand:     ['כתבת שער בתקשורת המובילה בתחום', 'הזמנה לדבר על הבמה הגדולה בכנס המרכזי', 'המוצר הופך שם דבר מוכר בשוק'],
-    investors: ['פגישת המשך עם קרן הון סיכון מובילה', 'term sheet ראשוני על סבב גיוס', 'הזמנה להצטרף לתוכנית אצה של שם מוביל']
+    sale:      ['חוזה רכש שנתי של {product} מלקוח עוגן', 'עסקת הפצה ארצית ל-{product}', 'הזמנה חוזרת בהיקף פי 20 מהעסקה הראשונה'],
+    leads:     ['רשימת המתנה של אלפי לידים איכותיים ל-{product}', 'שותפות עם מותג-על שמזרים קהל שלם אל {product}', 'קמפיין שיתוף שמכפיל את מאגר הלקוחות של {product}'],
+    brand:     ['כתבת שער על {product} בתקשורת המובילה בתחום', 'הזמנה לדבר על {product} על הבמה הגדולה בכנס המרכזי', '{product} הופך שם דבר מוכר בשוק'],
+    investors: ['פגישת המשך על {product} עם קרן הון סיכון מובילה', 'term sheet ראשוני על סבב גיוס עבור {product}', 'הזמנה ל-{product} להצטרף לתוכנית האצה של שם מוביל']
   };
 
   const PLAN_TEMPLATES = [
@@ -413,6 +450,17 @@
     return tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k] || '');
   }
 
+  function roundNice(n) {
+    if (n < 100) return Math.round(n / 5) * 5;
+    if (n < 1000) return Math.round(n / 10) * 10;
+    if (n < 10000) return Math.round(n / 100) * 100;
+    if (n < 100000) return Math.round(n / 1000) * 1000;
+    return Math.round(n / 10000) * 10000;
+  }
+  function fmtMoney(amount, currency) {
+    return currency + roundNice(amount).toLocaleString('he-IL');
+  }
+
   let nonce = 0;
 
   function generate() {
@@ -420,28 +468,39 @@
     const desc = document.getElementById('prod-desc').value.trim();
     const catKey = document.getElementById('prod-cat').value;
     const goalKey = document.getElementById('prod-goal').value;
+    const currency = document.getElementById('prod-currency').value;
     const cat = CATEGORY[catKey];
     const goal = GOAL[goalKey];
 
-    const seed = hashStr(name + '|' + desc + '|' + catKey + '|' + goalKey + '|' + nonce);
+    const rawValue = parseFloat((document.getElementById('prod-value').value || '').replace(/[^\d.]/g, ''));
+    const isEstimated = !(rawValue > 0);
+    const baseValue = isEstimated ? DEFAULT_VALUE[catKey] : rawValue;
+
+    const seed = hashStr(name + '|' + desc + '|' + catKey + '|' + goalKey + '|' + baseValue + '|' + nonce);
     const rng = mulberry32(seed);
     const vars = { partner: cat.partner, community: cat.community, catLabel: cat.label, product: name };
 
     const rungs = [
-      { type: 'עוגן פתיחה', cls: '', asset: pick(rng, ANCHORS) },
+      { type: 'נקודת פתיחה', cls: '', asset: `${name} כפי שהוא היום${desc ? ' — ' + desc : ''}` },
       { type: 'פיזי משודרג', cls: '', asset: fill(pick(rng, STEP1), vars) },
       { type: 'פיזי משמעותי', cls: '', asset: fill(pick(rng, STEP2), vars) },
       { type: 'ניהול משבר (Pivot)', cls: 'crisis', asset: fill(pick(rng, CRISIS), vars) },
       { type: 'חוויתי', cls: '', asset: fill(pick(rng, STEP3), vars) },
       { type: 'גישה / רשת', cls: '', asset: fill(pick(rng, STEP4), vars) },
-      { type: 'הזדמנות חשיפה', cls: '', asset: pick(rng, STEP5) },
-      { type: 'היעד הסופי', cls: 'final', asset: pick(rng, FINAL[goalKey]) }
+      { type: 'הזדמנות חשיפה', cls: '', asset: fill(pick(rng, STEP5), vars) },
+      { type: 'היעד הסופי', cls: 'final', asset: fill(pick(rng, FINAL[goalKey]), vars) }
     ];
 
+    rungs.forEach((r, i) => {
+      const jitter = i === 0 ? 1 : 0.8 + rng() * 0.45;
+      r.value = baseValue * VALUE_FACTORS[i] * jitter;
+      r.multiplier = Math.max(1, Math.round(r.value / baseValue));
+    });
+
     const hookTemplates = [
-      `מ"${rungs[0].asset}" ל"${rungs[7].asset}" — זו הדרך שבה ${name} עומד/ת להוכיח לעולם כמה שווה מה שכבר יש לכם.`,
-      `אף אחד לא מאמין שאפשר להגיע מ-${rungs[0].asset.slice(0, 24)}… ל-${rungs[7].asset} — עד שרואים את זה קורה בשידור חי.`,
-      `${name}: הפרויקט שמתחיל כמעט משום דבר, ומסתיים ב${rungs[7].asset}.`
+      `מ-${fmtMoney(rungs[0].value, currency)} ל-${fmtMoney(rungs[7].value, currency)} — זו הדרך שבה ${name} עומד/ת להציף פי ${rungs[7].multiplier} יותר ערך ממה שהוא שווה היום.`,
+      `אף אחד לא מאמין שאפשר להגיע מ-${fmtMoney(rungs[0].value, currency)} ל-${fmtMoney(rungs[7].value, currency)} — עד שרואים את ${name} עושה את זה בשידור חי.`,
+      `${name}: מ-${fmtMoney(rungs[0].value, currency)} היום, ל-${rungs[7].asset} ששווה ${fmtMoney(rungs[7].value, currency)}.`
     ];
 
     const planLines = [];
@@ -451,10 +510,17 @@
       planLines.push(planPool.splice(idx, 1)[0]);
     }
 
-    renderResult({ name, cat, goal, rungs, hook: pick(rng, hookTemplates), planLines });
+    renderResult({ name, desc, cat, goal, currency, baseValue, isEstimated, rungs, hook: pick(rng, hookTemplates), planLines });
   }
 
   function renderResult(data) {
+    document.getElementById('out-name').textContent = data.name;
+    document.getElementById('out-cat').textContent = data.cat.label;
+    document.getElementById('out-goal').textContent = data.goal.label;
+    document.getElementById('out-value').innerHTML =
+      fmtMoney(data.baseValue, data.currency) +
+      (data.isEstimated ? ` <span class="estimate-flag">(הערכה לפי קטגוריה — עדכנו למספר מדויק)</span>` : '');
+
     document.getElementById('out-hook').textContent = data.hook;
 
     const ladderEl = document.getElementById('out-ladder');
@@ -462,7 +528,10 @@
     data.rungs.forEach((r, i) => {
       const li = document.createElement('li');
       if (r.cls) li.classList.add(r.cls);
-      li.innerHTML = `<div class="rung-top"><span class="rung-index">שלב ${i + 1}</span><span class="rung-type">${r.type}</span></div><div class="rung-asset">${r.asset}</div>`;
+      const valueLine = i === 0
+        ? `≈ ${fmtMoney(r.value, data.currency)} <span class="mult">(נקודת הייחוס)</span>`
+        : `≈ ${fmtMoney(r.value, data.currency)} <span class="mult">(פי ${r.multiplier} מנקודת הפתיחה)</span>`;
+      li.innerHTML = `<div class="rung-top"><span class="rung-index">שלב ${i + 1}</span><span class="rung-type">${r.type}</span></div><div class="rung-asset">${r.asset}</div><div class="rung-value">${valueLine}</div>`;
       ladderEl.appendChild(li);
     });
 
@@ -496,10 +565,12 @@
     const lines = [];
     lines.push(`להציף ערך — אסטרטגיית "המהדק האדום" עבור: ${data.name}`);
     lines.push('');
+    lines.push(`הבנו את המוצר: ${data.name} (${data.cat.label}), שווי נוכחי ${fmtMoney(data.baseValue, data.currency)}${data.isEstimated ? ' [הערכה]' : ''}, מטרה: ${data.goal.label}.`);
+    lines.push('');
     lines.push(`Hook: ${data.hook}`);
     lines.push('');
     lines.push('סולם החליפין העולה:');
-    data.rungs.forEach((r, i) => lines.push(`  ${i + 1}. [${r.type}] ${r.asset}`));
+    data.rungs.forEach((r, i) => lines.push(`  ${i + 1}. [${r.type}] ${r.asset} — ≈ ${fmtMoney(r.value, data.currency)}${i > 0 ? ' (פי ' + r.multiplier + ')' : ''}`));
     lines.push('');
     lines.push('תוכנית בנייה בפומבי:');
     data.planLines.forEach(l => lines.push('  - ' + l));
@@ -520,6 +591,12 @@
   document.getElementById('generate-btn').addEventListener('click', () => { nonce = 0; generate(); });
   document.getElementById('reroll-btn').addEventListener('click', () => { nonce++; generate(); });
   document.getElementById('restart-btn').addEventListener('click', () => {
+    document.getElementById('prod-name').value = '';
+    document.getElementById('prod-desc').value = '';
+    document.getElementById('prod-cat').selectedIndex = 0;
+    document.getElementById('prod-goal').selectedIndex = 0;
+    document.getElementById('prod-value').value = '';
+    document.getElementById('prod-currency').selectedIndex = 0;
     document.getElementById('result-view').classList.add('hidden');
     document.getElementById('form-view').classList.remove('hidden');
     document.getElementById('step-bar-1').classList.add('active');
