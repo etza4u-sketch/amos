@@ -261,6 +261,7 @@
         <li>מפרסמים את זה בפומבי, ונותנים לקהל להתחרות על ההצעות.</li>
         <li>כל "כן" מוביל לצעד קצת יותר גדול — עד שמגיעים למשהו שאי אפשר לקנות בכסף.</li>
         <li>מתעדים הכל, כולל את הכישלונות — זה מה שהופך עוקבים לשגרירים.</li>
+        <li>אין קיצור דרך: אפשר (וכדאי) לעשות הרבה סבבי חילופין, וכל סבב מקפיץ את הערך — לא לרוץ ליעד אחרי צעד אחד.</li>
         <li>הדלת שנפתחת בסוף היא תוצאה ישירה של הקשר האחרון שבחרתם — לא קסם, קשר סיבתי.</li>
       </ol>
     </details>
@@ -269,8 +270,10 @@
   <!-- GAME -->
   <section class="card hidden" id="game-view">
     <div id="feed"></div>
-    <div class="game-actions">
-      <button class="btn btn-gold" id="next-btn">▶ הצעד הבא בסחר</button>
+    <div class="game-actions hidden" id="round-actions">
+      <button class="btn btn-gold" id="continue-btn">🔁 עוד חילופין</button>
+      <button class="btn btn-primary" id="dream-btn">🏁 לנסות להשיג את החלום עכשיו</button>
+      <div class="hint" id="dream-hint"></div>
     </div>
     <div class="btn-row hidden" id="finale-actions">
       <button class="btn btn-outline" id="copy-story-btn">🚀 פרסמו את כל הסיפור בפייסבוק</button>
@@ -309,21 +312,14 @@
     'סוויטה בבניין הכי יוקרתי בעיר'
   ];
 
-  const STEP2_POOL = [
-    'אוזניות אלחוטיות חדשות באריזה',
-    'שובר מתנה של 500 ₪ לרשת מסעדות',
-    'קונסולת משחקים משומשת שעדיין עובדת מצוין',
-    'שעון חכם כמעט חדש',
-    'זוג נעליים מיוחדות במהדורה מוגבלת',
-    'תיק גב איכותי למחשב נייד'
-  ];
-  const STEP3_POOL = [
-    'אופניים חשמליים משומשים במצב טוב',
-    'טלוויזיה חכמה 55 אינץ׳',
-    'שובר נופש לסוף שבוע בצימר זוגי',
-    'מצלמה דיגיטלית מקצועית יד שנייה',
-    'שולחן עבודה חשמלי מתכוונן',
-    'קורקינט חשמלי כמעט חדש'
+  // Escalating value tiers for plain trade rounds — tier grows with round number,
+  // so round 1 and round 11 offer very different scales of object.
+  const TIER_POOLS = [
+    ['אוזניות אלחוטיות חדשות באריזה', 'שובר מתנה של 300 ₪', 'ארנק עור איכותי', 'כפפות עונה מיוחדות במהדורה מוגבלת'],
+    ['שעון חכם כמעט חדש', 'קונסולת משחקים משומשת שעדיין עובדת מצוין', 'תיק גב יוקרתי למחשב נייד', 'אוזניות אולפן מקצועיות'],
+    ['אופניים חשמליים משומשים במצב טוב', 'טלוויזיה חכמה 55 אינץ׳', 'מצלמה דיגיטלית מקצועית יד שנייה', 'קורקינט חשמלי כמעט חדש'],
+    ['שובר נופש לסוף שבוע בצימר זוגי', 'מחשב גיימינג חזק כמעט חדש', 'רהיטי מעצבים לסלון', 'ציוד סאונד מקצועי לבית'],
+    ['קטנוע חדש באריזה', 'שובר נופש שבועי בחו״ל לזוג', 'תכשיט יוקרה עם תעודת אחריות', 'ציוד הקלטות מקצועי מלא לאולפן ביתי']
   ];
   const PIVOT_POOL = [
     'לפרסם בכנות שהעסקה נפלה ולבקש מהקהילה רעיון לצעד הבא',
@@ -331,7 +327,7 @@
     'לחכות 24 שעות, לנשום, ולפרסם עדכון כן על מה שקרה',
     'לפנות ישירות לקהילה ולשאול: "מי יכול לעזור לי להמשיך מכאן?"'
   ];
-  const STEP5_POOL = [
+  const EXPERIENCE_POOL = [
     'כרטיסי VIP למופע מוזיקה גדול',
     'סיור מודרך מאחורי הקלעים באולפן הפקה',
     'יום התנסות בטיסת מצנח רחיפה (טאנדם)',
@@ -339,7 +335,7 @@
     'סדנת יצירה עם אמן/ית מוכר/ת',
     'כרטיס גישה לאירוע ספורט יוקרתי'
   ];
-  const STEP6_POOL = [
+  const NETWORK_POOL = [
     'פגישה עם משפיען/ית מקומי/ת עם עשרות אלפי עוקבים',
     'יום צילומים מקצועי עם צלם/ת סטילס לתיק עבודות',
     'כניסה לאירוע השקה סגור של מותג מוכר',
@@ -348,30 +344,58 @@
     'הזמנה להצטרף לקבוצת אספנים/יזמים מובילה בתחום'
   ];
 
-  const CHOICE_META = {
-    2: {
-      icon: '🔁', label: 'חילופין #1', pool: STEP2_POOL, n: 3,
-      narrate: (have) => `הפוסט על "${have}" מתחיל לרוץ. כמה אנשים מגיבים, אבל רק בגלל שיש עכשיו כמה מציעים שמתחרים — אחת ההצעות בולטת. איזו לוקחים:`
-    },
-    3: {
-      icon: '🔁', label: 'חילופין #2', pool: STEP3_POOL, n: 3,
-      narrate: (have) => `עכשיו כש-"${have}" ביד, אתם מפרסמים שוב — וההיסטוריה שכבר בנית עושה את ההבדל: ההצעות מגיעות מליגה אחרת. מה מקבלים:`
-    },
-    4: {
-      icon: '⚠️', label: 'תפנית', pool: PIVOT_POOL, n: 2,
-      narrate: (have) => `עסקה על "${have}" שנראתה סגורה נופלת ברגע האחרון. איך מגיבים — כי איך שמגיבים עכשיו יקבע מי יבוא בעקבות זה:`
-    },
-    5: {
-      icon: '✨', label: 'חוויה', pool: STEP5_POOL, n: 3,
-      narrate: (have) => `הדרך שבה התמודדתם עם התפנית לא עוברת בשקט — מישהו ששם לב מציע הפעם לא חפץ, אלא:`
-    },
-    6: {
-      icon: '🌐', label: 'דלת נפתחת', pool: STEP6_POOL, n: 3,
-      narrate: (have) => `החוויה הזו חושפת אתכם לאנשים שלא הייתם פוגשים בדרך אחרת. אחד מהם מציע לפתוח לכם דלת ספציפית:`
-    }
-  };
-
   const DUP_TIP = 'טיפ: אם יש לכם יותר מעותק אחד מאותו פריט — פרסמו את הכפולים בנפרד ותנו לכמה מציעים להתחרות עליהם. התחרות בין המציעים היא זו שמעלה את המחיר האמיתי, לא אתם.';
+
+  const MIN_ROUNDS_FOR_DREAM = 4;
+
+  // Every 3rd round is a narrative beat (pivot/experience/network) instead of a plain trade —
+  // cycling through the three so a long game keeps varying instead of repeating.
+  function roundKind(round) {
+    if (round % 3 === 0) {
+      const cycle = ['pivot', 'experience', 'network'];
+      return cycle[(round / 3 - 1) % cycle.length];
+    }
+    return 'trade';
+  }
+
+  function roundMeta(round) {
+    const kind = roundKind(round);
+    if (kind === 'trade') {
+      const tier = Math.min(Math.floor((round - 1) / 2), TIER_POOLS.length - 1);
+      return {
+        kind, icon: '🔁', label: `חילופין #${round}`, pool: TIER_POOLS[tier], n: 3,
+        narrate: (have) => `הפוסט על "${have}" מתחיל לרוץ. יש עכשיו כמה מציעים שמתחרים על תשומת הלב שלכם — אחת ההצעות בולטת. איזו לוקחים:`
+      };
+    }
+    if (kind === 'pivot') {
+      return {
+        kind, icon: '⚠️', label: 'תפנית', pool: PIVOT_POOL, n: 2,
+        narrate: (have) => `עסקה על "${have}" שנראתה סגורה נופלת ברגע האחרון. איך מגיבים — כי איך שמגיבים עכשיו יקבע מי יבוא בעקבות זה:`
+      };
+    }
+    if (kind === 'experience') {
+      return {
+        kind, icon: '✨', label: 'חוויה', pool: EXPERIENCE_POOL, n: 3,
+        narrate: (have) => `אחרי "${have}", מישהו לא מציע חפץ הפעם, אלא:`
+      };
+    }
+    return {
+      kind, icon: '🌐', label: 'קשר חדש', pool: NETWORK_POOL, n: 3,
+      narrate: (have) => `הסיפור סביב "${have}" חושף אתכם לאנשים שלא הייתם פוגשים בדרך אחרת. אחד מהם מציע לפתוח לכם דלת ספציפית:`
+    };
+  }
+
+  // Flavor-only value escalation — grows with round number, not tied to any real currency.
+  function jumpBand(round) {
+    const bands = [
+      { max: 2, label: 'קטנה', mult: 'פי 1.5–2' },
+      { max: 4, label: 'בינונית', mult: 'פי 3–5' },
+      { max: 6, label: 'משמעותית', mult: 'פי 8–12' },
+      { max: 8, label: 'גדולה', mult: 'פי 20–30' },
+      { max: Infinity, label: 'ענקית', mult: 'פי 50 ומעלה' }
+    ];
+    return bands.find(b => round <= b.max);
+  }
 
   function mulberry32(seed) {
     return function () {
@@ -404,40 +428,27 @@
   let itemPhotoDataUrl = null;
   let itemFileName = null;
   let shuffleVariants = {};
-  let rungs = [];
-  let currentIndex = -1;
-  let pendingChoiceIndex = null;
+  let feed = [];           // ordered list of resolved entries: {icon,label,text,kind,round}
+  let round = 0;            // number of trade rounds resolved so far (0 = still on the public step)
+  let lastNetworkText = null; // most recent "open door" — what the finale causally traces back to
+  let pendingCardEl = null;   // DOM node of a choice prompt awaiting the player's pick
+  let pendingRoundNum = null;
 
   function actionText(it) {
     return `לרוב האנשים "${it}" לא שווה כלום — וזה בסדר גמור. פרסמו את זה בפייסבוק או בקבוצה רלוונטית (ובמיוחד כל כפול או עותק נוסף שיש לכם ממנו), ותנו לקהל להציע. אתם לא מחפשים "קונה" — אתם מחפשים את האספן/ית הספציפי/ת שבשבילו/ה זה שווה הרבה יותר מהמחיר הרשמי. הצעה אחת כזאת מספיקה כדי להתחיל את השרשרת.`;
   }
 
-  function buildRung(idx) {
-    if (idx === 0) return { icon: '🎒', label: 'מה יש לך', text: item };
-    if (idx === 1) return { icon: '📣', label: 'הצעד הפומבי', text: actionText(item) };
-    if (idx === 7) return { icon: '🏁', label: 'החלום', text: finalText() };
-  }
-
-  function finalText() {
-    const door = rungs[6] && rungs[6].text;
-    if (door) {
-      return `בדיוק דרך זה — "${door}" — אתם מגיעים לאדם שמחזיק ביד את ${dream}, ומוכן להציע אותו תמורת מה שכבר הגעתם אליו. לא מזל: זו התוצאה הישירה של הקשר הזה.`;
-    }
-    return `הקשר שבניתם עד כה מוביל אתכם לאדם שמוכן להציע: ${dream} — תמורת מה שכבר הגעתם אליו.`;
-  }
-
-  function sampleOptions(idx) {
-    const meta = CHOICE_META[idx];
-    const rng = mulberry32(hashStr(item + '|' + dream + '|' + idx + '|shuffle|' + (shuffleVariants[idx] || 0)));
+  function sampleOptionsFor(meta, roundNum) {
+    const rng = mulberry32(hashStr(item + '|' + dream + '|round|' + roundNum + '|' + meta.kind + '|shuffle|' + (shuffleVariants[roundNum] || 0)));
     return sampleN(rng, meta.pool, meta.n);
   }
 
   function postForRung(idx) {
-    const r = rungs[idx];
-    if (idx === 1) return r.text;
-    if (idx === 7) return `🏁 השגתי את זה: ${dream}!\nהתחלתי מ: ${item}.\nתודה לכל מי שהיה חלק מהמסע 🙏📎`;
-    const have = idx === 2 ? item : rungs[idx - 1].text;
-    return `📎 עדכון בפרויקט הסחר שלי:\nיש לי כרגע: ${have}\nמוכן/ה לשדרג ל: ${r.text}\nמי מציע? תגובות פתוחות 👇`;
+    const entry = feed[idx];
+    if (entry.kind === 'public') return entry.text;
+    if (entry.kind === 'final') return `🏁 השגתי את זה: ${dream}!\nהתחלתי מ: ${item}.\nתודה לכל מי שהיה חלק מהמסע 🙏📎`;
+    const have = idx > 0 ? feed[idx - 1].text : item;
+    return `📎 עדכון בפרויקט הסחר שלי:\nיש לי כרגע: ${have}\nמוכן/ה לשדרג ל: ${entry.text}\nמי מציע? תגובות פתוחות 👇`;
   }
 
   function openShareModal(text) {
@@ -493,75 +504,36 @@
     setTimeout(() => { container.innerHTML = ''; }, 3000);
   }
 
-  function renderCard(idx, flash) {
-    const r = rungs[idx];
-    let el = document.getElementById('card-' + idx);
-    const isFinal = idx === 7;
-    const isNew = !el;
-    if (isNew) {
-      el = document.createElement('div');
-      el.id = 'card-' + idx;
-      el.className = 'step-card' + (isFinal ? ' final' : '');
-      document.getElementById('feed').appendChild(el);
-    }
-    if (flash) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+  // Fixed, non-choice entries: the starting item and the public call-to-action.
+  function appendFixedEntry(entry) {
+    feed.push(entry);
+    const idx = feed.length - 1;
+    const el = document.createElement('div');
+    el.id = 'card-' + idx;
+    el.className = 'step-card';
+    document.getElementById('feed').appendChild(el);
 
-    const showTip = idx === 1;
-    const canCopy = idx >= 1;
+    const showTip = entry.kind === 'public';
+    const canCopy = entry.kind !== 'start';
     let attachmentHtml = '';
-    if (idx === 0) {
+    if (entry.kind === 'start') {
       if (itemPhotoDataUrl) attachmentHtml = `<img class="item-photo" src="${itemPhotoDataUrl}" alt="תמונת הפריט" />`;
       else if (itemFileName) attachmentHtml = `<div class="file-chip">📄 ${escapeHtml(itemFileName)}</div>`;
     }
 
     el.innerHTML = `
-      <div class="step-top"><span class="step-icon">${r.icon}</span><span class="step-label">${r.label}</span></div>
-      <div class="step-text">${escapeHtml(r.text)}</div>
+      <div class="step-top"><span class="step-icon">${entry.icon}</span><span class="step-label">${entry.label}</span></div>
+      <div class="step-text">${escapeHtml(entry.text)}</div>
       ${attachmentHtml}
       ${showTip ? `<div class="step-tip">${DUP_TIP}</div>` : ''}
-      ${isFinal ? `<div class="finale-banner">🏆 הגעתם מ"${escapeHtml(item)}" ל${escapeHtml(dream)}!</div><div class="confetti-wrap" id="confetti-wrap"></div>` : ''}
       ${canCopy ? `<button class="step-copy" data-copy-idx="${idx}">🚀 פרסמו בפייסבוק</button>` : ''}
     `;
-
-    if (isFinal) {
-      const wrap = document.getElementById('confetti-wrap');
-      if (wrap) spawnConfetti(wrap);
-    }
-
     const copyBtn = el.querySelector('[data-copy-idx]');
-    if (copyBtn) {
-      copyBtn.addEventListener('click', () => publishToFacebook(postForRung(idx)));
-    }
+    if (copyBtn) copyBtn.addEventListener('click', () => publishToFacebook(postForRung(idx)));
+    return idx;
   }
 
-  function updateActionsUI() {
-    const nextBtn = document.getElementById('next-btn');
-    const finaleActions = document.getElementById('finale-actions');
-
-    if (currentIndex >= 7) {
-      nextBtn.classList.add('hidden');
-      finaleActions.classList.remove('hidden');
-    } else if (pendingChoiceIndex !== null) {
-      nextBtn.classList.add('hidden');
-      finaleActions.classList.add('hidden');
-    } else {
-      nextBtn.classList.remove('hidden');
-      nextBtn.textContent = currentIndex < 0 ? '▶ הצעד הראשון' : '▶ הצעד הבא בסחר';
-      finaleActions.classList.add('hidden');
-    }
-  }
-
-  function renderChoicePrompt(idx) {
-    const meta = CHOICE_META[idx];
-    const options = sampleOptions(idx);
-    const have = idx === 2 ? item : (rungs[idx - 1] ? rungs[idx - 1].text : item);
-    let el = document.getElementById('card-' + idx);
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'card-' + idx;
-      el.className = 'step-card';
-      document.getElementById('feed').appendChild(el);
-    }
+  function renderPromptInto(el, meta, options, have) {
     el.innerHTML = `
       <div class="step-top"><span class="step-icon">${meta.icon}</span><span class="step-label">${meta.label}</span></div>
       <div class="step-text">${escapeHtml(meta.narrate(have))}</div>
@@ -569,44 +541,99 @@
       <button type="button" class="step-copy shuffle-btn">🔀 הצעות אחרות</button>
     `;
     el.querySelectorAll('.choice-opt').forEach((btn, i) => {
-      btn.addEventListener('click', () => resolveChoice(idx, options[i]));
+      btn.addEventListener('click', () => resolveRound(meta, options[i]));
     });
     el.querySelector('.shuffle-btn').addEventListener('click', () => {
-      shuffleVariants[idx] = (shuffleVariants[idx] || 0) + 1;
-      renderChoicePrompt(idx);
+      shuffleVariants[pendingRoundNum] = (shuffleVariants[pendingRoundNum] || 0) + 1;
+      renderPromptInto(el, meta, sampleOptionsFor(meta, pendingRoundNum), have);
     });
   }
 
-  function resolveChoice(idx, text) {
-    const meta = CHOICE_META[idx];
-    rungs[idx] = { icon: meta.icon, label: meta.label, text };
-    currentIndex = idx;
-    pendingChoiceIndex = null;
-    renderCard(idx, true);
-    updateActionsUI();
-    document.getElementById('card-' + idx).scrollIntoView({ behavior: 'smooth', block: 'end' });
+  function startRound() {
+    round++;
+    pendingRoundNum = round;
+    const meta = roundMeta(round);
+    const options = sampleOptionsFor(meta, round);
+    const have = feed.length ? feed[feed.length - 1].text : item;
+
+    pendingCardEl = document.createElement('div');
+    pendingCardEl.className = 'step-card';
+    document.getElementById('feed').appendChild(pendingCardEl);
+    renderPromptInto(pendingCardEl, meta, options, have);
+
+    document.getElementById('round-actions').classList.add('hidden');
+    pendingCardEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }
 
-  function revealNext() {
-    if (pendingChoiceIndex !== null || currentIndex >= 7) return;
-    const nextIdx = currentIndex + 1;
-    if (CHOICE_META[nextIdx]) {
-      pendingChoiceIndex = nextIdx;
-      renderChoicePrompt(nextIdx);
-      updateActionsUI();
-      document.getElementById('card-' + nextIdx).scrollIntoView({ behavior: 'smooth', block: 'end' });
-      return;
+  function resolveRound(meta, text) {
+    const entry = { icon: meta.icon, label: meta.label, text, kind: meta.kind, round: pendingRoundNum };
+    feed.push(entry);
+    const idx = feed.length - 1;
+    if (meta.kind === 'network') lastNetworkText = text;
+
+    const el = pendingCardEl;
+    el.id = 'card-' + idx;
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    const band = entry.kind !== 'pivot' ? jumpBand(entry.round) : null;
+    el.innerHTML = `
+      <div class="step-top"><span class="step-icon">${entry.icon}</span><span class="step-label">${entry.label}</span></div>
+      <div class="step-text">${escapeHtml(entry.text)}</div>
+      ${band ? `<div class="step-tip">🔺 קפיצת ערך: ${band.label} (${band.mult} בערך מהצעד הקודם)</div>` : ''}
+      <button type="button" class="step-copy" data-copy-idx="${idx}">🚀 פרסמו בפייסבוק</button>
+    `;
+    el.querySelector('[data-copy-idx]').addEventListener('click', () => publishToFacebook(postForRung(idx)));
+
+    pendingCardEl = null;
+    document.getElementById('round-actions').classList.remove('hidden');
+    updateDreamButtonState();
+    el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }
+
+  function updateDreamButtonState() {
+    document.getElementById('continue-btn').textContent = round === 0 ? '🔁 חילופין ראשון' : '🔁 עוד חילופין';
+    const btn = document.getElementById('dream-btn');
+    const hint = document.getElementById('dream-hint');
+    if (round < MIN_ROUNDS_FOR_DREAM) {
+      btn.disabled = true;
+      hint.textContent = `עוד ${MIN_ROUNDS_FOR_DREAM - round} סבבים לפחות, כדי שההצעה על החלום תרגיש מוצדקת ולא מגיעה משום מקום.`;
+    } else {
+      btn.disabled = false;
+      hint.textContent = 'אפשר גם להמשיך לסחור עוד קצת כדי להגדיל את המינוף לפני שסוגרים על החלום.';
     }
-    currentIndex = nextIdx;
-    rungs[currentIndex] = buildRung(currentIndex);
-    renderCard(currentIndex, false);
-    updateActionsUI();
-    document.getElementById('card-' + currentIndex).scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }
+
+  function goForDream() {
+    const door = lastNetworkText;
+    const text = door
+      ? `בדיוק דרך זה — "${door}" — אתם מגיעים לאדם שמחזיק ביד את ${dream}, ומוכן להציע אותו תמורת מה שכבר הגעתם אליו אחרי ${round} סבבי סחר. לא מזל: זו התוצאה הישירה של הקשר הזה.`
+      : `אחרי ${round} סבבי סחר, אתם מגיעים לאדם שמוכן להציע: ${dream} — תמורת מה שכבר הגעתם אליו.`;
+    const entry = { icon: '🏁', label: 'החלום', text, kind: 'final' };
+    feed.push(entry);
+    const idx = feed.length - 1;
+
+    const el = document.createElement('div');
+    el.id = 'card-' + idx;
+    el.className = 'step-card final';
+    document.getElementById('feed').appendChild(el);
+    el.innerHTML = `
+      <div class="step-top"><span class="step-icon">🏁</span><span class="step-label">החלום</span></div>
+      <div class="step-text">${escapeHtml(text)}</div>
+      <div class="finale-banner">🏆 הגעתם מ"${escapeHtml(item)}" ל${escapeHtml(dream)} אחרי ${round} סבבי סחר!</div>
+      <div class="confetti-wrap" id="confetti-wrap"></div>
+      <button type="button" class="step-copy" data-copy-idx="${idx}">🚀 פרסמו בפייסבוק</button>
+    `;
+    const wrap = document.getElementById('confetti-wrap');
+    if (wrap) spawnConfetti(wrap);
+    el.querySelector('[data-copy-idx]').addEventListener('click', () => publishToFacebook(postForRung(idx)));
+
+    document.getElementById('round-actions').classList.add('hidden');
+    document.getElementById('finale-actions').classList.remove('hidden');
+    el.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }
 
   function fullStoryText() {
     const lines = [`להציף ערך — הסיפור שלי, מ"${item}" ל${dream}`, ''];
-    rungs.forEach((r, i) => { if (r) lines.push(`${r.icon} ${r.label}: ${r.text}`); });
+    feed.forEach(e => lines.push(`${e.icon} ${e.label}: ${e.text}`));
     return lines.join('\n');
   }
 
@@ -649,18 +676,25 @@
     dream = dreamVal || pick(rng, DREAMS);
 
     shuffleVariants = {};
-    rungs = [];
-    currentIndex = -1;
-    pendingChoiceIndex = null;
+    feed = [];
+    round = 0;
+    lastNetworkText = null;
+    pendingCardEl = null;
+    pendingRoundNum = null;
     document.getElementById('feed').innerHTML = '';
+    document.getElementById('finale-actions').classList.add('hidden');
 
     document.getElementById('intro-view').classList.add('hidden');
     document.getElementById('game-view').classList.remove('hidden');
-    updateActionsUI();
-    revealNext();
+
+    appendFixedEntry({ icon: '🎒', label: 'מה יש לך', text: item, kind: 'start' });
+    appendFixedEntry({ icon: '📣', label: 'הצעד הפומבי', text: actionText(item), kind: 'public' });
+    document.getElementById('round-actions').classList.remove('hidden');
+    updateDreamButtonState();
   });
 
-  document.getElementById('next-btn').addEventListener('click', revealNext);
+  document.getElementById('continue-btn').addEventListener('click', startRound);
+  document.getElementById('dream-btn').addEventListener('click', goForDream);
 
   document.getElementById('copy-story-btn').addEventListener('click', () => publishToFacebook(fullStoryText()));
 
