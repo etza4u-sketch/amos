@@ -199,6 +199,29 @@
   }
   .toast.hidden { display: none; }
 
+  /* Share modal — always-works fallback: visible, selectable text + a real link */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.72);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px; z-index: 300; backdrop-filter: blur(3px);
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 22px; max-width: 460px; width: 100%;
+  }
+  .modal-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 6px; }
+  .modal-sub { font-size: 0.84rem; color: var(--muted); margin-bottom: 12px; }
+  #share-text {
+    width: 100%; min-height: 130px; resize: vertical; background: var(--surface2);
+    border: 1.5px solid var(--border); border-radius: 10px; color: var(--text);
+    padding: 12px 14px; font-size: 0.9rem; font-family: inherit; margin-bottom: 12px;
+  }
+  #share-text:focus { outline: none; border-color: var(--gold); }
+  .modal-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .modal-actions .btn { flex: 1; min-width: 130px; }
+  .modal-actions a.btn { text-decoration: none; }
+
   footer { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 30px; padding: 0 20px; }
 </style>
 </head>
@@ -259,6 +282,19 @@
 
 <footer>בהשראת אסטרטגיית "המהדק האדום" של קייל מקדונלד · סקיל "להציף ערך"</footer>
 <div class="toast hidden" id="toast">הועתק ✓</div>
+
+<div class="modal-overlay hidden" id="share-modal">
+  <div class="modal-box">
+    <div class="modal-title">🚀 הפוסט מוכן</div>
+    <div class="modal-sub">ניסינו להעתיק אוטומטית. אם זה לא הצליח — לחצו בתוך התיבה, בחרו הכל (Ctrl/Cmd+A) והעתיקו (Ctrl/Cmd+C).</div>
+    <textarea id="share-text" readonly></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-gold" id="modal-copy-btn">📋 העתיקו שוב</button>
+      <a class="btn btn-outline" id="modal-fb-link" href="https://www.facebook.com/" target="_blank" rel="noopener">פתחו את פייסבוק ↗</a>
+    </div>
+    <button class="btn btn-outline" id="modal-close-btn">סגרו</button>
+  </div>
+</div>
 
 <script>
 (function () {
@@ -381,18 +417,36 @@
     return `📎 עדכון בפרויקט הסחר שלי:\nיש לי כרגע: ${have}\nמוכן/ה לשדרג ל: ${r.text}\nמי מציע? תגובות פתוחות 👇`;
   }
 
+  function openShareModal(text) {
+    const box = document.getElementById('share-text');
+    box.value = text;
+    document.getElementById('share-modal').classList.remove('hidden');
+    box.focus();
+    box.select();
+  }
+  function closeShareModal() {
+    document.getElementById('share-modal').classList.add('hidden');
+  }
+  async function tryClipboard(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) { return false; }
+  }
+
   async function publishToFacebook(text) {
+    // Native share sheet (mobile mostly) — the real one-tap path when it works.
     if (navigator.share) {
       try {
         await navigator.share({ text });
         return;
       } catch (e) {
-        return; // user cancelled the native share sheet — don't also open a tab
+        if (e && e.name === 'AbortError') return; // user closed the share sheet on purpose
+        // any other failure (unsupported, blocked by permissions policy, etc.) — fall through
       }
     }
-    try { await navigator.clipboard.writeText(text); } catch (e) { /* ignore */ }
-    window.open('https://www.facebook.com/', '_blank', 'noopener');
-    showToast('הטקסט הועתק — הדביקו אותו בפוסט חדש בפייסבוק 📋');
+    // Always-works fallback: show the text so it can be copied/selected no matter what
+    // the browser/sandbox allows, plus a real link (not a JS popup) to Facebook.
+    openShareModal(text);
+    const copied = await tryClipboard(text);
+    if (copied) showToast('הטקסט הועתק — אפשר גם להדביק ישירות ✓');
   }
 
   function showToast(msg) {
@@ -585,6 +639,18 @@
   document.getElementById('next-btn').addEventListener('click', revealNext);
 
   document.getElementById('copy-story-btn').addEventListener('click', () => publishToFacebook(fullStoryText()));
+
+  document.getElementById('modal-copy-btn').addEventListener('click', async () => {
+    const box = document.getElementById('share-text');
+    box.focus();
+    box.select();
+    const ok = await tryClipboard(box.value);
+    showToast(ok ? 'הועתק ✓' : 'לא הצליח להעתיק אוטומטית — הטקסט מסומן, נסו Ctrl/Cmd+C');
+  });
+  document.getElementById('modal-close-btn').addEventListener('click', closeShareModal);
+  document.getElementById('share-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'share-modal') closeShareModal();
+  });
 
   document.getElementById('example-btn').addEventListener('click', () => {
     document.getElementById('start-item').value = 'אוסף מטליות לחות ממותגות ממסעדות מרחבי העולם, כולל כמה כפולות נדירות';
