@@ -83,6 +83,25 @@
   input[type="text"]:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible {
     outline: 2px solid var(--gold); outline-offset: 2px;
   }
+  input[type="file"] {
+    width: 100%; color: var(--muted); font-size: 0.85rem;
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; font-family: inherit;
+  }
+  input[type="file"]::file-selector-button {
+    background: var(--gold); color: #241b02; border: none; border-radius: 8px;
+    padding: 6px 12px; margin-inline-end: 10px; font-weight: 700; cursor: pointer;
+  }
+  .hint { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+  #file-preview { margin-top: 10px; }
+  .file-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 12px; font-size: 0.82rem;
+  }
+  .file-chip button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.95rem; }
+  .item-photo-preview { max-width: 160px; max-height: 160px; border-radius: 10px; display: block; margin-top: 8px; object-fit: cover; }
+  .item-photo { max-width: 100%; border-radius: 10px; margin-top: 10px; display: block; }
 
   .btn {
     border: none; border-radius: 12px; padding: 13px 22px;
@@ -150,6 +169,14 @@
   }
   .step-copy:hover { color: var(--text); border-color: var(--muted); }
 
+  .choice-options { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .choice-opt {
+    background: var(--surface); border: 1.5px solid var(--border); color: var(--text);
+    border-radius: 10px; padding: 11px 14px; font-size: 0.92rem; text-align: right;
+    cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+  .choice-opt:hover { border-color: var(--gold); background: rgba(242,201,76,0.08); }
+
   .finale-banner {
     text-align: center; font-size: 1.15rem; font-weight: 800; margin-top: 4px;
     background: linear-gradient(135deg, var(--red), var(--gold));
@@ -195,6 +222,12 @@
       <label for="dream-goal">לאן החלום לוקח אתכם? (אופציונלי)</label>
       <input type="text" id="dream-goal" placeholder='למשל: "פרארי" — אם לא תגידו, נבחר לכם חלום בעצמנו' />
     </div>
+    <div class="field">
+      <label for="item-file">📸 צלמו את הפריט או צרפו קובץ עם פרטים (אופציונלי)</label>
+      <input type="file" id="item-file" accept="image/*,.pdf,.doc,.docx,.txt" />
+      <div class="hint">נשאר רק אצלכם בדפדפן — לא נשלח לשום שרת.</div>
+      <div id="file-preview"></div>
+    </div>
     <button class="btn btn-primary" id="start-btn">🎬 תתחילו לסחור</button>
     <button class="btn btn-outline example-btn" id="example-btn">🧪 לא יודעים איך להתחיל? נסו דוגמה: מטליות לחות ← פרארי</button>
 
@@ -215,7 +248,6 @@
     <div id="feed"></div>
     <div class="game-actions">
       <button class="btn btn-gold" id="next-btn">▶ הצעד הבא בסחר</button>
-      <button class="btn btn-outline hidden" id="reroll-step-btn">🎲 ניסוח אחר לצעד הזה</button>
     </div>
     <div class="btn-row hidden" id="finale-actions">
       <button class="btn btn-outline" id="copy-story-btn">🚀 פרסמו את כל הסיפור בפייסבוק</button>
@@ -241,39 +273,51 @@
     'סוויטה בבניין הכי יוקרתי בעיר'
   ];
 
-  const TRADE1 = [
-    'האספן/ית הספציפי/ת שבשבילו/ה הפריט שלכם היה שווה הרבה, מציע/ה בתמורה משהו שכבר הרבה יותר אנשים ירצו.',
-    'מישהו מציע לך שדרוג נחמד: גרסה נדירה יותר, או פריט תואם שמשלים את מה שכבר יש לך.',
-    'אספן/ית אחר/ת מציע/ה חילופין בפריט שכולם בקבוצה מדברים עליו לאחרונה.',
-    'מישהו קופץ עם הצעה שמפתיעה אותך — פריט ששווה קצת יותר ממה שציפית.'
+  const STEP2_POOL = [
+    'אוזניות אלחוטיות חדשות באריזה',
+    'שובר מתנה של 500 ₪ לרשת מסעדות',
+    'קונסולת משחקים משומשת שעדיין עובדת מצוין',
+    'שעון חכם כמעט חדש',
+    'זוג נעליים מיוחדות במהדורה מוגבלת',
+    'תיק גב איכותי למחשב נייד'
   ];
-  const TRADE2 = [
-    'ההצעות מתחילות להתחרות זו בזו, וזוכה הצעה שמכניסה אותך לליגה אחרת לגמרי.',
-    'מישהו עם רשת קשרים רחבה שם עין על הפוסט, ומציע חילופין שמזיז את הסיפור קדימה בגדול.',
-    'עמוד או קבוצה גדולים משתפים את הפוסט שלך, וההצעות מגיעות ממקומות שלא דמיינת.'
+  const STEP3_POOL = [
+    'אופניים חשמליים משומשים במצב טוב',
+    'טלוויזיה חכמה 55 אינץ׳',
+    'שובר נופש לסוף שבוע בצימר זוגי',
+    'מצלמה דיגיטלית מקצועית יד שנייה',
+    'שולחן עבודה חשמלי מתכוונן',
+    'קורקינט חשמלי כמעט חדש'
   ];
-  const PIVOT = [
-    'הצעה שנראתה מובטחת נופלת ברגע האחרון — אתם מפרסמים את זה בכנות, וזה דווקא מייצר עוד יותר עניין.',
-    'מישהו מנסה "לרמות" בהצעה נמוכה מדי — אתם מסרבים בנימוס בפומבי, וזה מזניק את האמינות שלכם.',
-    'תקלה בלתי צפויה בעסקה הופכת, תוך יום, לפוסט הכי ויראלי שלכם עד כה.'
+  const PIVOT_POOL = [
+    'לפרסם בכנות שהעסקה נפלה ולבקש מהקהילה רעיון לצעד הבא',
+    'להציע לצד השני עסקה חלופית קטנה יותר, רק כדי לשמור על המומנטום',
+    'לחכות 24 שעות, לנשום, ולפרסם עדכון כן על מה שקרה',
+    'לפנות ישירות לקהילה ולשאול: "מי יכול לעזור לי להמשיך מכאן?"'
   ];
-  const EXPERIENCE = [
-    'מישהו לא מציע חפץ, אלא חוויה — מפגש, סיור, או הזמנה למקום שאי אפשר לקנות אליו כרטיס.',
-    'אתם מקבלים גישה לאירוע סגור, ומתעדים את זה בשידור חי לכל מי שעוקב אחרי הסיפור.',
-    'ההצעה הזו היא הראשונה שהיא לא "חפץ תמורת חפץ" — היא רגע שלא נשכח.'
+  const STEP5_POOL = [
+    'כרטיסי VIP למופע מוזיקה גדול',
+    'סיור מודרך מאחורי הקלעים באולפן הפקה',
+    'יום התנסות בטיסת מצנח רחיפה (טאנדם)',
+    'ארוחת שף פרטית עם שף מקומי ידוע',
+    'סדנת יצירה עם אמן/ית מוכר/ת',
+    'כרטיס גישה לאירוע ספורט יוקרתי'
   ];
-  const NETWORK = [
-    'מישהו עם קשרים בתחום שרלוונטי לחלום שלכם רואה את הסיפור, ומציע לפתוח דלת.',
-    'עיתונאי/ת או בלוגר/ית תופס/ת את הסיפור ומפרסם/ת עליו — פתאום כולם מכירים את הסיפור שלכם.',
-    'הפוסט שלכם מגיע בדיוק לאדם שמכיר את מי שיכול לקרב אתכם לחלום.'
+  const STEP6_POOL = [
+    'פגישה עם משפיען/ית מקומי/ת עם עשרות אלפי עוקבים',
+    'יום צילומים מקצועי עם צלם/ת סטילס לתיק עבודות',
+    'כניסה לאירוע השקה סגור של מותג מוכר',
+    'הזדמנות לספר את הסיפור בפודקאסט מקומי פופולרי',
+    'חיבור ישיר לעיתונאי/ת שמסקר/ת סיפורי סחר ומיזמים',
+    'הזמנה להצטרף לקבוצת אספנים/יזמים מובילה בתחום'
   ];
 
-  const STEP_META = {
-    2: { icon: '🔁', label: 'חילופין #1', pool: TRADE1 },
-    3: { icon: '🔁', label: 'חילופין #2', pool: TRADE2 },
-    4: { icon: '⚠️', label: 'תפנית',       pool: PIVOT },
-    5: { icon: '✨', label: 'חוויה',        pool: EXPERIENCE },
-    6: { icon: '🌐', label: 'דלת נפתחת',   pool: NETWORK }
+  const CHOICE_META = {
+    2: { icon: '🔁', label: 'חילופין #1',  prompt: 'איזו הצעה מקבלים הפעם? בחרו אחת:',     pool: STEP2_POOL, n: 3 },
+    3: { icon: '🔁', label: 'חילופין #2',  prompt: 'איזו הצעה גדולה יותר מקבלים? בחרו אחת:', pool: STEP3_POOL, n: 3 },
+    4: { icon: '⚠️', label: 'תפנית',        prompt: 'עסקה נפלה ברגע האחרון. איך מגיבים?',    pool: PIVOT_POOL, n: 2 },
+    5: { icon: '✨', label: 'חוויה',         prompt: 'איזו חוויה מקבלים? בחרו אחת:',          pool: STEP5_POOL, n: 3 },
+    6: { icon: '🌐', label: 'דלת נפתחת',    prompt: 'איזו דלת נפתחת? בחרו אחת:',             pool: STEP6_POOL, n: 3 }
   };
 
   const DUP_TIP = 'טיפ: אם יש לכם יותר מעותק אחד מאותו פריט — פרסמו את הכפולים בנפרד ותנו לכמה מציעים להתחרות עליהם. התחרות בין המציעים היא זו שמעלה את המחיר האמיתי, לא אתם.';
@@ -292,24 +336,41 @@
     return h >>> 0;
   }
   function pick(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function sampleN(rng, arr, n) {
+    const copy = arr.slice();
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy.slice(0, n);
+  }
 
   let item = '';
   let dream = '';
-  let variants = [0, 0, 0, 0, 0, 0, 0, 0];
+  let itemPhotoDataUrl = null;
+  let itemFileName = null;
+  let shuffleVariants = {};
   let rungs = [];
   let currentIndex = -1;
+  let pendingChoiceIndex = null;
 
   function actionText(it) {
     return `לרוב האנשים "${it}" לא שווה כלום — וזה בסדר גמור. פרסמו את זה בפייסבוק או בקבוצה רלוונטית (ובמיוחד כל כפול או עותק נוסף שיש לכם ממנו), ותנו לקהל להציע. אתם לא מחפשים "קונה" — אתם מחפשים את האספן/ית הספציפי/ת שבשבילו/ה זה שווה הרבה יותר מהמחיר הרשמי. הצעה אחת כזאת מספיקה כדי להתחיל את השרשרת.`;
   }
 
-  function buildRung(idx, variant) {
+  function buildRung(idx) {
     if (idx === 0) return { icon: '🎒', label: 'מה יש לך', text: item };
     if (idx === 1) return { icon: '📣', label: 'הצעד הפומבי', text: actionText(item) };
     if (idx === 7) return { icon: '🏁', label: 'החלום', text: `ואז, יום בהיר אחד, מישהו מציע את זה: ${dream} — תמורת מה שכבר הגעתם אליו.` };
-    const meta = STEP_META[idx];
-    const rng = mulberry32(hashStr(item + '|' + dream + '|' + idx + '|' + variant));
-    return { icon: meta.icon, label: meta.label, text: pick(rng, meta.pool) };
+  }
+
+  function sampleOptions(idx) {
+    const meta = CHOICE_META[idx];
+    const rng = mulberry32(hashStr(item + '|' + dream + '|' + idx + '|shuffle|' + (shuffleVariants[idx] || 0)));
+    return sampleN(rng, meta.pool, meta.n);
   }
 
   function postForRung(idx) {
@@ -370,12 +431,18 @@
 
     const showTip = idx === 1;
     const canCopy = idx >= 1;
+    let attachmentHtml = '';
+    if (idx === 0) {
+      if (itemPhotoDataUrl) attachmentHtml = `<img class="item-photo" src="${itemPhotoDataUrl}" alt="תמונת הפריט" />`;
+      else if (itemFileName) attachmentHtml = `<div class="file-chip">📄 ${escapeHtml(itemFileName)}</div>`;
+    }
 
     el.innerHTML = `
       <div class="step-top"><span class="step-icon">${r.icon}</span><span class="step-label">${r.label}</span></div>
-      <div class="step-text">${r.text}</div>
+      <div class="step-text">${escapeHtml(r.text)}</div>
+      ${attachmentHtml}
       ${showTip ? `<div class="step-tip">${DUP_TIP}</div>` : ''}
-      ${isFinal ? `<div class="finale-banner">🏆 הגעתם מ"${item}" ל${dream}!</div><div class="confetti-wrap" id="confetti-wrap"></div>` : ''}
+      ${isFinal ? `<div class="finale-banner">🏆 הגעתם מ"${escapeHtml(item)}" ל${escapeHtml(dream)}!</div><div class="confetti-wrap" id="confetti-wrap"></div>` : ''}
       ${canCopy ? `<button class="step-copy" data-copy-idx="${idx}">🚀 פרסמו בפייסבוק</button>` : ''}
     `;
 
@@ -392,39 +459,71 @@
 
   function updateActionsUI() {
     const nextBtn = document.getElementById('next-btn');
-    const rerollBtn = document.getElementById('reroll-step-btn');
     const finaleActions = document.getElementById('finale-actions');
 
     if (currentIndex >= 7) {
       nextBtn.classList.add('hidden');
-      rerollBtn.classList.add('hidden');
       finaleActions.classList.remove('hidden');
+    } else if (pendingChoiceIndex !== null) {
+      nextBtn.classList.add('hidden');
+      finaleActions.classList.add('hidden');
     } else {
       nextBtn.classList.remove('hidden');
       nextBtn.textContent = currentIndex < 0 ? '▶ הצעד הראשון' : '▶ הצעד הבא בסחר';
       finaleActions.classList.add('hidden');
-      if (currentIndex >= 2 && currentIndex <= 6) {
-        rerollBtn.classList.remove('hidden');
-      } else {
-        rerollBtn.classList.add('hidden');
-      }
     }
   }
 
+  function renderChoicePrompt(idx) {
+    const meta = CHOICE_META[idx];
+    const options = sampleOptions(idx);
+    let el = document.getElementById('card-' + idx);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'card-' + idx;
+      el.className = 'step-card';
+      document.getElementById('feed').appendChild(el);
+    }
+    el.innerHTML = `
+      <div class="step-top"><span class="step-icon">${meta.icon}</span><span class="step-label">${meta.label}</span></div>
+      <div class="step-text">${meta.prompt}</div>
+      <div class="choice-options">${options.map(opt => `<button type="button" class="choice-opt">${escapeHtml(opt)}</button>`).join('')}</div>
+      <button type="button" class="step-copy shuffle-btn">🔀 הצעות אחרות</button>
+    `;
+    el.querySelectorAll('.choice-opt').forEach((btn, i) => {
+      btn.addEventListener('click', () => resolveChoice(idx, options[i]));
+    });
+    el.querySelector('.shuffle-btn').addEventListener('click', () => {
+      shuffleVariants[idx] = (shuffleVariants[idx] || 0) + 1;
+      renderChoicePrompt(idx);
+    });
+  }
+
+  function resolveChoice(idx, text) {
+    const meta = CHOICE_META[idx];
+    rungs[idx] = { icon: meta.icon, label: meta.label, text };
+    currentIndex = idx;
+    pendingChoiceIndex = null;
+    renderCard(idx, true);
+    updateActionsUI();
+    document.getElementById('card-' + idx).scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }
+
   function revealNext() {
-    if (currentIndex >= 7) return;
-    currentIndex++;
-    rungs[currentIndex] = buildRung(currentIndex, variants[currentIndex]);
+    if (pendingChoiceIndex !== null || currentIndex >= 7) return;
+    const nextIdx = currentIndex + 1;
+    if (CHOICE_META[nextIdx]) {
+      pendingChoiceIndex = nextIdx;
+      renderChoicePrompt(nextIdx);
+      updateActionsUI();
+      document.getElementById('card-' + nextIdx).scrollIntoView({ behavior: 'smooth', block: 'end' });
+      return;
+    }
+    currentIndex = nextIdx;
+    rungs[currentIndex] = buildRung(currentIndex);
     renderCard(currentIndex, false);
     updateActionsUI();
     document.getElementById('card-' + currentIndex).scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }
-
-  function rerollCurrent() {
-    if (currentIndex < 2 || currentIndex > 6) return;
-    variants[currentIndex]++;
-    rungs[currentIndex] = buildRung(currentIndex, variants[currentIndex]);
-    renderCard(currentIndex, true);
   }
 
   function fullStoryText() {
@@ -432,6 +531,36 @@
     rungs.forEach((r, i) => { if (r) lines.push(`${r.icon} ${r.label}: ${r.text}`); });
     return lines.join('\n');
   }
+
+  function clearFile() {
+    itemPhotoDataUrl = null;
+    itemFileName = null;
+    document.getElementById('item-file').value = '';
+    document.getElementById('file-preview').innerHTML = '';
+  }
+
+  document.getElementById('item-file').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    const preview = document.getElementById('file-preview');
+    itemPhotoDataUrl = null;
+    itemFileName = null;
+    preview.innerHTML = '';
+    if (!file) return;
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        itemPhotoDataUrl = reader.result;
+        preview.innerHTML = `<img src="${itemPhotoDataUrl}" class="item-photo-preview" alt="תצוגה מקדימה" /><div class="file-chip">📸 ${escapeHtml(file.name)} <button type="button" id="remove-file">✕</button></div>`;
+        document.getElementById('remove-file').addEventListener('click', clearFile);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      itemFileName = file.name;
+      preview.innerHTML = `<div class="file-chip">📄 ${escapeHtml(file.name)} <button type="button" id="remove-file">✕</button></div>`;
+      document.getElementById('remove-file').addEventListener('click', clearFile);
+    }
+  });
 
   document.getElementById('start-btn').addEventListener('click', () => {
     const itemVal = document.getElementById('start-item').value.trim();
@@ -441,9 +570,10 @@
     const rng = mulberry32(hashStr(item + '|seed'));
     dream = dreamVal || pick(rng, DREAMS);
 
-    variants = [0, 0, 0, 0, 0, 0, 0, 0];
+    shuffleVariants = {};
     rungs = [];
     currentIndex = -1;
+    pendingChoiceIndex = null;
     document.getElementById('feed').innerHTML = '';
 
     document.getElementById('intro-view').classList.add('hidden');
@@ -453,7 +583,6 @@
   });
 
   document.getElementById('next-btn').addEventListener('click', revealNext);
-  document.getElementById('reroll-step-btn').addEventListener('click', rerollCurrent);
 
   document.getElementById('copy-story-btn').addEventListener('click', () => publishToFacebook(fullStoryText()));
 
@@ -466,6 +595,7 @@
   document.getElementById('restart-btn').addEventListener('click', () => {
     document.getElementById('start-item').value = '';
     document.getElementById('dream-goal').value = '';
+    clearFile();
     document.getElementById('game-view').classList.add('hidden');
     document.getElementById('intro-view').classList.remove('hidden');
   });
