@@ -261,7 +261,7 @@
         <li>מפרסמים את זה בפומבי, ונותנים לקהל להתחרות על ההצעות.</li>
         <li>כל "כן" מוביל לצעד קצת יותר גדול — עד שמגיעים למשהו שאי אפשר לקנות בכסף.</li>
         <li>מתעדים הכל, כולל את הכישלונות — זה מה שהופך עוקבים לשגרירים.</li>
-        <li>ואז, יום אחד, מישהו מציע את החלום עצמו.</li>
+        <li>הדלת שנפתחת בסוף היא תוצאה ישירה של הקשר האחרון שבחרתם — לא קסם, קשר סיבתי.</li>
       </ol>
     </details>
   </section>
@@ -349,11 +349,26 @@
   ];
 
   const CHOICE_META = {
-    2: { icon: '🔁', label: 'חילופין #1',  prompt: 'איזו הצעה מקבלים הפעם? בחרו אחת:',     pool: STEP2_POOL, n: 3 },
-    3: { icon: '🔁', label: 'חילופין #2',  prompt: 'איזו הצעה גדולה יותר מקבלים? בחרו אחת:', pool: STEP3_POOL, n: 3 },
-    4: { icon: '⚠️', label: 'תפנית',        prompt: 'עסקה נפלה ברגע האחרון. איך מגיבים?',    pool: PIVOT_POOL, n: 2 },
-    5: { icon: '✨', label: 'חוויה',         prompt: 'איזו חוויה מקבלים? בחרו אחת:',          pool: STEP5_POOL, n: 3 },
-    6: { icon: '🌐', label: 'דלת נפתחת',    prompt: 'איזו דלת נפתחת? בחרו אחת:',             pool: STEP6_POOL, n: 3 }
+    2: {
+      icon: '🔁', label: 'חילופין #1', pool: STEP2_POOL, n: 3,
+      narrate: (have) => `הפוסט על "${have}" מתחיל לרוץ. כמה אנשים מגיבים, אבל רק בגלל שיש עכשיו כמה מציעים שמתחרים — אחת ההצעות בולטת. איזו לוקחים:`
+    },
+    3: {
+      icon: '🔁', label: 'חילופין #2', pool: STEP3_POOL, n: 3,
+      narrate: (have) => `עכשיו כש-"${have}" ביד, אתם מפרסמים שוב — וההיסטוריה שכבר בנית עושה את ההבדל: ההצעות מגיעות מליגה אחרת. מה מקבלים:`
+    },
+    4: {
+      icon: '⚠️', label: 'תפנית', pool: PIVOT_POOL, n: 2,
+      narrate: (have) => `עסקה על "${have}" שנראתה סגורה נופלת ברגע האחרון. איך מגיבים — כי איך שמגיבים עכשיו יקבע מי יבוא בעקבות זה:`
+    },
+    5: {
+      icon: '✨', label: 'חוויה', pool: STEP5_POOL, n: 3,
+      narrate: (have) => `הדרך שבה התמודדתם עם התפנית לא עוברת בשקט — מישהו ששם לב מציע הפעם לא חפץ, אלא:`
+    },
+    6: {
+      icon: '🌐', label: 'דלת נפתחת', pool: STEP6_POOL, n: 3,
+      narrate: (have) => `החוויה הזו חושפת אתכם לאנשים שלא הייתם פוגשים בדרך אחרת. אחד מהם מציע לפתוח לכם דלת ספציפית:`
+    }
   };
 
   const DUP_TIP = 'טיפ: אם יש לכם יותר מעותק אחד מאותו פריט — פרסמו את הכפולים בנפרד ותנו לכמה מציעים להתחרות עליהם. התחרות בין המציעים היא זו שמעלה את המחיר האמיתי, לא אתם.';
@@ -400,7 +415,15 @@
   function buildRung(idx) {
     if (idx === 0) return { icon: '🎒', label: 'מה יש לך', text: item };
     if (idx === 1) return { icon: '📣', label: 'הצעד הפומבי', text: actionText(item) };
-    if (idx === 7) return { icon: '🏁', label: 'החלום', text: `ואז, יום בהיר אחד, מישהו מציע את זה: ${dream} — תמורת מה שכבר הגעתם אליו.` };
+    if (idx === 7) return { icon: '🏁', label: 'החלום', text: finalText() };
+  }
+
+  function finalText() {
+    const door = rungs[6] && rungs[6].text;
+    if (door) {
+      return `בדיוק דרך זה — "${door}" — אתם מגיעים לאדם שמחזיק ביד את ${dream}, ומוכן להציע אותו תמורת מה שכבר הגעתם אליו. לא מזל: זו התוצאה הישירה של הקשר הזה.`;
+    }
+    return `הקשר שבניתם עד כה מוביל אתכם לאדם שמוכן להציע: ${dream} — תמורת מה שכבר הגעתם אליו.`;
   }
 
   function sampleOptions(idx) {
@@ -531,6 +554,7 @@
   function renderChoicePrompt(idx) {
     const meta = CHOICE_META[idx];
     const options = sampleOptions(idx);
+    const have = idx === 2 ? item : (rungs[idx - 1] ? rungs[idx - 1].text : item);
     let el = document.getElementById('card-' + idx);
     if (!el) {
       el = document.createElement('div');
@@ -540,7 +564,7 @@
     }
     el.innerHTML = `
       <div class="step-top"><span class="step-icon">${meta.icon}</span><span class="step-label">${meta.label}</span></div>
-      <div class="step-text">${meta.prompt}</div>
+      <div class="step-text">${escapeHtml(meta.narrate(have))}</div>
       <div class="choice-options">${options.map(opt => `<button type="button" class="choice-opt">${escapeHtml(opt)}</button>`).join('')}</div>
       <button type="button" class="step-copy shuffle-btn">🔀 הצעות אחרות</button>
     `;
