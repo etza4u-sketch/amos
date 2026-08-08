@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>בודק אמינות בפרסום | ניתוח מודעות ותוכן שיווקי</title>
+<meta name="description" content="כלי חינמי לבדיקת אמינות מודעות פרסום ותוכן שיווקי – מזהה מניפולציות, הבטחות מופרזות וסימני אזהרה, ונותן ציון אמינות." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal:       #14b8a6;
+    --teal-dark:  #0d9488;
+    --teal-glow:  rgba(20,184,166,0.15);
+    --green:      #22c55e;
+    --amber:      #f59e0b;
+    --red:        #ef4444;
+    --dark:       #060b12;
+    --dark2:      #0a141f;
+    --card:       #0d1b28;
+    --card2:      #0f2233;
+    --border:     rgba(20,184,166,0.18);
+    --white:      #ffffff;
+    --text:       #cbd5e1;
+    --muted:      #64748b;
+    --radius:     16px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Segoe UI', 'Arial Hebrew', Arial, sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    line-height: 1.7;
+    direction: rtl;
+    min-height: 100vh;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 99;
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(6,11,18,0.95);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { font-size: 1.1rem; font-weight: 900; color: var(--white); }
+  .nav-logo span { color: var(--teal); }
+  .nav-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--teal-glow);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    color: var(--teal);
+    font-weight: 600;
+  }
+  .nav-badge::before { content: '✓'; font-size: 0.75rem; }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 56px 24px 32px;
+    text-align: center;
+    background: radial-gradient(ellipse at 50% 0%, rgba(20,184,166,0.12) 0%, transparent 65%);
+  }
+  .hero h1 {
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    font-weight: 900;
+    color: var(--white);
+    line-height: 1.25;
+    margin-bottom: 14px;
+  }
+  .hero h1 span { color: var(--teal); }
+  .hero p {
+    font-size: 1.02rem;
+    color: var(--muted);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* ── LAYOUT ── */
+  .layout {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+  }
+  .card h2 {
+    font-size: 1.05rem;
+    color: var(--white);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card h2 .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--teal); color: #04231f;
+    font-size: 0.8rem; font-weight: 800;
+  }
+
+  label.field-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 14px 0 6px;
+  }
+  textarea {
+    width: 100%;
+    min-height: 160px;
+    resize: vertical;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 12px 14px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  textarea:focus, input:focus { outline: none; border-color: var(--teal); }
+
+  .checklist { list-style: none; margin-top: 6px; }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--teal);
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .checklist .q-text { flex: 1; }
+  .checklist .q-hint { display: block; color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+
+  .btn {
+    border: none; border-radius: 12px; padding: 13px 22px;
+    font-size: 0.95rem; font-weight: 700; cursor: pointer;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+    justify-content: center; width: 100%;
+  }
+  .btn-primary { background: var(--teal); color: #04231f; margin-top: 18px; }
+  .btn-primary:hover { filter: brightness(1.12); transform: translateY(-1px); }
+  .btn-outline {
+    background: transparent; color: var(--muted);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    margin-top: 8px;
+  }
+  .btn-outline:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+  /* ── RESULT PANEL ── */
+  #result-panel { position: sticky; top: 78px; }
+  .placeholder {
+    color: var(--muted);
+    text-align: center;
+    padding: 40px 10px;
+    font-size: 0.9rem;
+  }
+  .placeholder .big { font-size: 2.2rem; display: block; margin-bottom: 10px; }
+
+  .gauge-wrap { text-align: center; margin-bottom: 18px; }
+  .gauge {
+    width: 150px; height: 150px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    background: conic-gradient(var(--gauge-color, var(--teal)) calc(var(--pct, 0) * 1%), rgba(255,255,255,0.06) 0);
+    transition: background 0.6s ease;
+  }
+  .gauge::before {
+    content: '';
+    position: absolute; inset: 10px;
+    border-radius: 50%;
+    background: var(--card);
+  }
+  .gauge-score {
+    position: relative; z-index: 1;
+    font-size: 2.1rem; font-weight: 900; color: var(--white);
+  }
+  .gauge-label {
+    font-weight: 800; font-size: 1.05rem;
+    margin-bottom: 4px;
+  }
+  .gauge-sub { color: var(--muted); font-size: 0.85rem; }
+
+  .findings-group { margin-top: 18px; }
+  .findings-group h3 {
+    font-size: 0.85rem; color: var(--muted); margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .finding {
+    display: flex; gap: 10px;
+    background: var(--card2);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 0.87rem;
+    border-inline-start: 3px solid var(--muted);
+  }
+  .finding.red    { border-inline-start-color: var(--red); }
+  .finding.amber  { border-inline-start-color: var(--amber); }
+  .finding.green  { border-inline-start-color: var(--green); }
+  .finding .icon  { flex-shrink: 0; }
+  .finding .body strong { display: block; color: var(--white); margin-bottom: 2px; }
+  .finding .body span { color: var(--muted); font-size: 0.82rem; }
+
+  .empty-note { color: var(--muted); font-size: 0.85rem; text-align: center; padding: 8px; }
+
+  footer {
+    text-align: center;
+    padding: 30px 20px 40px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--teal); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">בודק<span>אמינות</span></div>
+  <div class="nav-badge">כלי חינמי לצרכנים</div>
+</nav>
+
+<div class="hero">
+  <h1>כמה אפשר <span>לסמוך</span> על המודעה הזו?</h1>
+  <p>הדביקו טקסט של מודעה, פוסט ממומן או עמוד מכירה, סמנו כמה פרטים על העסק המפרסם — והכלי יזהה סימני אזהרה נפוצים ויעניק ציון אמינות.</p>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="card">
+      <h2><span class="num">1</span> טקסט המודעה</h2>
+      <label class="field-label">הדביקו כאן את נוסח המודעה / הפוסט / העמוד השיווקי</label>
+      <textarea id="ad-text" placeholder="לדוגמה: מבצע מטורף ליום אחד בלבד! 90% הנחה, רק 3 יחידות נשארו, מבטיחים תוצאות תוך 24 שעות..."></textarea>
+    </div>
+
+    <div class="card" style="margin-top:18px;">
+      <h2><span class="num">2</span> פרטי המפרסם</h2>
+      <ul class="checklist" id="checklist">
+        <li>
+          <input type="checkbox" data-weight="12" data-label="מספר עוסק מורשה / ח.פ מוצג באתר או במודעה" />
+          <span class="q-text">העסק מציג מספר עוסק מורשה / ח.פ
+            <span class="q-hint">דרישה בסיסית לשקיפות עסקית בישראל</span>
+          </span>
+        </li>
+        <li>
+          <input type="checkbox" data-weight="10" data-label="יש כתובת פיזית או דרכי יצירת קשר ברורות" />
+          <span class="q-text">יש כתובת פיזית / טלפון / דוא"ל ברורים
+            <span class="q-hint">לא רק טופס יצירת קשר ללא פרטים</span>
+          </span>
+        </li>
+        <li>
+          <input type="checkbox" data-weight="14" data-label="מדיניות החזרות/ביטול עסקה מוצגת בבירור" />
+          <span class="q-text">מדיניות החזרות / ביטול עסקה גלויה
+            <span class="q-hint">בהתאם לחוק הגנת הצרכן</span>
+          </span>
+        </li>
+        <li>
+          <input type="checkbox" data-weight="12" data-label="המחיר המוצג סופי, ללא עלויות נסתרות" />
+          <span class="q-text">המחיר המוצג סופי (כולל מע"מ, ללא עלויות נסתרות)</span>
+        </li>
+        <li>
+          <input type="checkbox" data-weight="12" data-label="ניתן למצוא ביקורות עצמאיות מחוץ לאתר המפרסם" />
+          <span class="q-text">קיימות ביקורות עצמאיות (גוגל, פורומים) ולא רק באתר עצמו</span>
+        </li>
+        <li>
+          <input type="checkbox" data-weight="10" data-label="אין לחץ זמן/מלאי מלאכותי בולט" />
+          <span class="q-text">אין תחושת לחץ זמן או מלאי מלאכותית בולטת</span>
+        </li>
+        <li>
+          <input type="checkbox" data-weight="10" data-label="במקרה של טענות רפואיות/פיננסיות – מוצג רישיון/אישור רגולטורי" />
+          <span class="q-text">אם יש טענות רפואיות/פיננסיות — מוצג רישיון או אישור רגולטורי
+            <span class="q-hint">רלוונטי רק אם המודעה עוסקת בתחום מפוקח</span>
+          </span>
+        </li>
+      </ul>
+    </div>
+
+    <button class="btn btn-primary" id="analyze-btn">בדקו את האמינות</button>
+    <button class="btn btn-outline" id="reset-btn">נקו טופס</button>
+  </div>
+
+  <div id="result-panel" class="card">
+    <div id="placeholder" class="placeholder">
+      <span class="big">🔍</span>
+      מלאו את הטקסט והפרטים משמאל ולחצו על "בדקו את האמינות" כדי לקבל ציון וניתוח מפורט.
+    </div>
+    <div id="result-content" style="display:none;">
+      <div class="gauge-wrap">
+        <div class="gauge" id="gauge">
+          <span class="gauge-score" id="gauge-score">0</span>
+        </div>
+        <div class="gauge-label" id="gauge-label"></div>
+        <div class="gauge-sub" id="gauge-sub"></div>
+      </div>
+      <div class="findings-group">
+        <h3>סימני אזהרה שזוהו</h3>
+        <div id="red-findings"></div>
+      </div>
+      <div class="findings-group">
+        <h3>סימנים חיוביים</h3>
+        <div id="green-findings"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  הניתוח מבוסס על זיהוי דפוסי ניסוח ומידע שדיווחתם עליו באופן ידני — הוא כלי עזר ואינו תחליף לבדיקה משפטית או צרכנית מקיפה.<br />
+  לפני רכישה, מומלץ לבדוק את העסק גם ב<a href="https://www.gov.il/he/departments/topics/consumer_protection" target="_blank" rel="noopener">אתר הגנת הצרכן</a>.
+</footer>
+
+<script>
+(function () {
+  const RED_FLAGS = [
+    { re: /(רק היום|היום בלבד|עד חצות|נגמר תוך|30 הראשונים|20 הראשונים|10 הראשונים|כמות מוגבלת|מלאי אחרון|הזדמנות אחרונה|עכשיו או לעולם לא)/g,
+      label: 'לחץ זמן מלאכותי', hint: 'ניסוח שיוצר תחושת דחיפות מלאכותית כדי לדלג על שיקול דעת', weight: 14 },
+    { re: /(מבטיח(ים)?|תוצאות מובטחות|100% הצלחה|ללא סיכון|בלי סיכון|הכי טוב בישראל|הכי זול בישראל|הכי חזק בעולם)/g,
+      label: 'הבטחות מוחלטות שקשה לאמת', hint: 'ניסוח בסופרלטיב או הבטחת תוצאה ודאית — כמעט תמיד בלתי ניתן להוכחה', weight: 16 },
+    { re: /(מומחים אומרים|מחקרים מוכיחים|מדענים גילו)(?!.*(מקור|קישור|לינק|footnote|\[\d))/g,
+      label: 'הפניה לסמכות ללא מקור', hint: '"מחקרים" או "מומחים" שמוזכרים בלי שם, מקור או קישור', weight: 10 },
+    { re: /(פלא|קסם|מהפכני לחלוטין|סוד ש)/g,
+      label: 'שפה מוגזמת / "פתרון פלא"', hint: 'תיאור מוצר כפתרון קסם נדיר מעורר חשד', weight: 8 },
+    { re: /(הנחה של \d{2,3}%|ב-?1 ש"?ח|במחיר סמלי)/g,
+      label: 'הנחה קיצונית / מחיר בלתי סביר', hint: 'הנחות של 80-99% או "מחיר סמלי" הן דפוס נפוץ בהונאות מסחר', weight: 12 },
+    { re: /!{2,}/g,
+      label: 'ריבוי סימני קריאה', hint: 'שימוש כבד בסימני קריאה נועד לעורר תגובה רגשית ולא שכלית', weight: 5 },
+    { re: /\b[A-Z]{4,}\b(?:\s+[A-Z]{4,}\b)+/g,
+      label: 'הדגשה עודפת (אותיות גדולות ברצף)', hint: 'טקסט שנצעק באנגלית באותיות גדולות כדי למשוך תשומת לב', weight: 4 },
+    { re: /(אחרת תפסידו|תתחרטו|לא תרצו לפספס)/g,
+      label: 'מניפולציית פחד מהפסד (FOMO)', hint: 'ניסוח שמנסה לגרום לפעולה מתוך פחד ולא מתוך שיקול דעת', weight: 9 }
+  ];
+
+  const POSITIVE_TEXT_FLAGS = [
+    { re: /(ח\.?פ\.?\s?\d{6,9}|עוסק מורשה\s?\d{6,9})/g, label: 'צוין מספר עוסק מורשה / ח.פ בטקסט עצמו', weight: 8 },
+    { re: /(תקנון|בכפוף לתקנון|בכפוף לתנאים)/g, label: 'הפניה לתקנון / תנאים מלאים', weight: 6 },
+    { re: /(החזר כספי|\d+ ימי? החזרה|ביטול עסקה)/g, label: 'צוינה מדיניות החזרה/ביטול', weight: 8 },
+    { re: /(כולל מע"?מ)/g, label: 'צוין שהמחיר כולל מע"מ', weight: 6 }
+  ];
+
+  const adTextEl = document.getElementById('ad-text');
+  const analyzeBtn = document.getElementById('analyze-btn');
+  const resetBtn = document.getElementById('reset-btn');
+  const placeholder = document.getElementById('placeholder');
+  const resultContent = document.getElementById('result-content');
+  const gauge = document.getElementById('gauge');
+  const gaugeScore = document.getElementById('gauge-score');
+  const gaugeLabel = document.getElementById('gauge-label');
+  const gaugeSub = document.getElementById('gauge-sub');
+  const redFindingsEl = document.getElementById('red-findings');
+  const greenFindingsEl = document.getElementById('green-findings');
+
+  function analyze() {
+    const text = adTextEl.value || '';
+    const checks = Array.from(document.querySelectorAll('#checklist input[type="checkbox"]'));
+
+    let score = 55; // neutral starting point
+    const redFindings = [];
+    const greenFindings = [];
+
+    RED_FLAGS.forEach(flag => {
+      const matches = text.match(flag.re);
+      if (matches && matches.length) {
+        const penalty = Math.min(flag.weight + (matches.length - 1) * 2, flag.weight + 8);
+        score -= penalty;
+        redFindings.push({ label: flag.label, hint: flag.hint, severity: 'red' });
+      }
+    });
+
+    POSITIVE_TEXT_FLAGS.forEach(flag => {
+      const matches = text.match(flag.re);
+      if (matches && matches.length) {
+        score += flag.weight;
+        greenFindings.push({ label: flag.label, severity: 'green' });
+      }
+    });
+
+    checks.forEach(cb => {
+      const w = Number(cb.dataset.weight) || 8;
+      const label = cb.dataset.label;
+      if (cb.checked) {
+        score += w * 0.6;
+        greenFindings.push({ label, severity: 'green' });
+      } else {
+        score -= w * 0.4;
+        redFindings.push({ label: 'לא סומן: ' + label, hint: 'פרט שקיפות בסיסי שלא אושר', severity: 'amber' });
+      }
+    });
+
+    if (!text.trim() && checks.every(cb => !cb.checked)) {
+      score = 50;
+    }
+
+    score = Math.max(0, Math.min(100, Math.round(score)));
+    renderResult(score, redFindings, greenFindings);
+  }
+
+  function renderResult(score, redFindings, greenFindings) {
+    placeholder.style.display = 'none';
+    resultContent.style.display = 'block';
+
+    let color, label, sub;
+    if (score >= 75) {
+      color = 'var(--green)'; label = 'אמינות גבוהה'; sub = 'לא נמצאו סימני אזהרה משמעותיים — עדיין מומלץ לבדוק לפני רכישה';
+    } else if (score >= 45) {
+      color = 'var(--amber)'; label = 'אמינות בינונית — יש להיזהר'; sub = 'נמצאו מספר סימני אזהרה שכדאי לבדוק לעומק';
+    } else {
+      color = 'var(--red)'; label = 'אמינות נמוכה — חשד גבוה'; sub = 'נמצאו סימני אזהרה רבים האופייניים לפרסום מטעה';
+    }
+
+    gauge.style.setProperty('--pct', score);
+    gauge.style.setProperty('--gauge-color', color);
+    gaugeScore.textContent = score;
+    gaugeLabel.textContent = label;
+    gaugeLabel.style.color = color;
+    gaugeSub.textContent = sub;
+
+    redFindingsEl.innerHTML = '';
+    if (redFindings.length === 0) {
+      redFindingsEl.innerHTML = '<div class="empty-note">לא זוהו סימני אזהרה בטקסט או בפרטים שסופקו.</div>';
+    } else {
+      redFindings.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'finding ' + f.severity;
+        div.innerHTML = `<span class="icon">${f.severity === 'red' ? '🚩' : '⚠️'}</span>
+          <span class="body"><strong>${escapeHtml(f.label)}</strong>${f.hint ? '<span>' + escapeHtml(f.hint) + '</span>' : ''}</span>`;
+        redFindingsEl.appendChild(div);
+      });
+    }
+
+    greenFindingsEl.innerHTML = '';
+    if (greenFindings.length === 0) {
+      greenFindingsEl.innerHTML = '<div class="empty-note">לא סומנו סימנים חיוביים עדיין.</div>';
+    } else {
+      greenFindings.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'finding green';
+        div.innerHTML = `<span class="icon">✅</span><span class="body"><strong>${escapeHtml(f.label)}</strong></span>`;
+        greenFindingsEl.appendChild(div);
+      });
+    }
+
+    resultContent.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function resetForm() {
+    adTextEl.value = '';
+    document.querySelectorAll('#checklist input[type="checkbox"]').forEach(cb => cb.checked = false);
+    resultContent.style.display = 'none';
+    placeholder.style.display = 'block';
+  }
+
+  analyzeBtn.addEventListener('click', analyze);
+  resetBtn.addEventListener('click', resetForm);
+})();
+</script>
+
+</body>
+</html>
